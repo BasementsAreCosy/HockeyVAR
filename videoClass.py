@@ -1,4 +1,5 @@
 import copy
+import math
 import cv2
 import os
 import glob
@@ -17,8 +18,12 @@ class HockeyVideo:
         self.currentImage = None
         self.mouseX = None
         self.mouseY = None
+        self.zoom = 1
         self.frameJump = frameJump  # How many frames are displayed e.g: frameJump = 2, only frame 0, 2, 4, 6 will play
         self.fps = 30  # Video FPS, redefined when a video is submitted. 30 is standard?
+        self.size = (750, 500)
+        self.scrollX = self.size[0]/2
+        self.scrollY = self.size[1]/2
         if not debug:
             self.separateFrames()  # Turns the video into a sequence of frames
         utils.tempClassifyFramesRand()  # Randomly assigns values to the frames (no model working yet)
@@ -50,7 +55,7 @@ class HockeyVideo:
             try:
                 success, image = vidObj.read()
                 if count % self.frameJump == 0:
-                    image = cv2.resize(image, (250, 250), interpolation=cv2.INTER_CUBIC)
+                    image = cv2.resize(image, self.size, interpolation=cv2.INTER_CUBIC)
                     cv2.imwrite(f'footage/{count}-predval.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
                 count += 1
             except:
@@ -91,7 +96,9 @@ class HockeyVideo:
                     self.displayImageInFrame(1, 0, frameName=frameName)
                     self.isPaused = True
             if self.manualVARMode:
+                print(self.scrollX, self.scrollY, end=' | ')
                 if self.VARStage[0] < self.endStage:
+                    self.displayVARImage(frameName)
                     if self.mouseX != None and self.mouseY != None:
                         if self.VARStage[1] == 'left':
                             clickLocation = (self.mouseX, self.mouseY)
@@ -111,7 +118,6 @@ class HockeyVideo:
                                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                                     if utils.extractConfidenceVal(frameName) != 0:
                                         self.ballCollisionPos = self.ballHistory[-1][1]
-                            self.displayVARImage(frameName)
                         self.VARInstructionLabel = tk.Label(self.root,
                                                             text=f'Please select the {self.VARStage[1]}-most point of the ball.')
                         self.VARInstructionLabel.grid(row=0, column=1)
@@ -131,11 +137,12 @@ class HockeyVideo:
 
     def displayImageInFrame(self, row, column, frameName=None, image=None):
         if frameName != None:
-            frameImg = utils.openImage(frameName)
+            image = cv2.imread(frameName)
             self.frame.configure(bg='green' if utils.extractConfidenceVal(frameName) == 0 else 'red')
         else:
-            frameImg = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
             self.frame.configure(bg='red')
+        image = self.zoomImage(image)
+        frameImg = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
         if self.lastImage != None:
             self.lastImage.destroy()
         if self.currentImage != None:
@@ -144,13 +151,29 @@ class HockeyVideo:
         self.currentImage.image = frameImg
         self.currentImage.grid(row=0, column=0, padx=5, pady=5)
         self.currentImage.bind('<Button-1>', self.getMousePos)
+        self.currentImage.bind('<MouseWheel>', self.scrollEvent)
         self.frame.grid(row=row, column=column, columnspan=6)
 
     def getMousePos(self, event):
         print(self.frameNum)
         if self.manualVARMode:
-            self.mouseX = event.x
-            self.mouseY = event.y
+            #[i / 2 for i in image.shape[:-1]] if coord is None else coord[::-1]
+            self.mouseX = round((event.x/self.zoom)+self.topLeftX)
+            self.mouseY = round((event.y/self.zoom)+self.topLeftY)
+
+    def scrollEvent(self, event):
+        self.scrollX += (event.delta/120)*(event.x-self.size[0]/2)/self.zoom
+        self.scrollY += (event.delta/120)*(event.y-self.size[1]/2)/self.zoom
+        self.zoom = max(1, self.zoom + (event.delta/600))
+
+    def zoomImage(self, image, angle=0):
+        coord = None if self.scrollX == None or self.scrollY == None else (self.scrollX, self.scrollY)
+        cy, cx = [i / 2 for i in image.shape[:-1]] if coord is None else coord[::-1]
+
+        rot_mat = cv2.getRotationMatrix2D((cx, cy), angle, self.zoom)
+        result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
+
+        return result
 
     def endManualVAR(self, event):
         self.manualVARMode = False
