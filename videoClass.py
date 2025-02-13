@@ -34,7 +34,7 @@ class HockeyVideo:
         self.VARStage = 0
         self.endStage = 5
         self.ballHistory = []
-        self.ballCollisionPos = None
+        self.ballCollisionIndex = None
 
     def separateFrames(self):
         files = glob.glob('footage/*')
@@ -50,7 +50,7 @@ class HockeyVideo:
             try:
                 success, image = vidObj.read()
                 if count % self.frameJump == 0:
-                    image = cv2.resize(image, (250, 250), interpolation=cv2.INTER_CUBIC)
+                    image = cv2.resize(image, (750, 500), interpolation=cv2.INTER_CUBIC)
                     cv2.imwrite(f'footage/{count}-predval.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
                 count += 1
             except:
@@ -59,7 +59,6 @@ class HockeyVideo:
     def displayFrames(self): # ONLY INVOKE AS THREAD
         comparisonFrameDifference = 12
         self.nextFrameDisplayTime = time.time()
-        clickLocation = None
         while True: # Thread: so while video exists, this always runs
             if self.videoEnded:
                 return  # When returned, the thread ends
@@ -95,6 +94,8 @@ class HockeyVideo:
                     if self.mouseX != None and self.mouseY != None:
                         self.ballHistory.append((self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump], (self.mouseX, self.mouseY), 5))
                         frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
+                        if utils.extractConfidenceVal(frameName) != 0:
+                            self.ballCollisionIndex = len(self.ballHistory) - 1
                         self.mouseX = None
                         self.mouseY = None
                         self.VARStage += 1
@@ -102,10 +103,12 @@ class HockeyVideo:
                             if utils.roundToNearest(self.frameNum + comparisonFrameDifference/self.endStage, self.frameJump) <= self.lastFrame:
                                 self.frameNum += comparisonFrameDifference/self.endStage
                                 frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                                if utils.extractConfidenceVal(frameName) != 0:
-                                    self.ballCollisionPos = self.ballHistory[-1][1]
                         self.displayVARImage(frameName)
                 else:
+                    self.displayVARResult()
+                    self.ballHistory = []
+                    self.ballCollisionIndex = None
+                    time.sleep(3)
                     self.VARInstructionLabel.destroy()
                     self.manualVARMode = False
                     if self.frameNum + self.frameJump <= self.lastFrame:
@@ -113,10 +116,32 @@ class HockeyVideo:
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                     self.displayImageInFrame(1, 0, frameName=frameName)
 
+    def displayVARResult(self):
+        pointsBeforeCollision = []
+        pointsAfterCollision = []
+        image = cv2.imread(self.ballHistory[self.ballCollisionIndex][0])
+        for i in range(len(self.ballHistory)):
+            if i < self.ballCollisionIndex:
+                pointsBeforeCollision.append(self.ballHistory[i][1])
+                colour = (0, 255, 0)
+            elif i == self.ballCollisionIndex:
+                colour = (0, 127, 255)
+            else:
+                pointsAfterCollision.append(self.ballHistory[i][1])
+                colour = (0, 0, 255)
+            cv2.circle(img=image, center=self.ballHistory[i][1], radius=self.ballHistory[i][2], color=colour, thickness=1)
+        cv2.line(img=image, pt1=self.ballHistory[self.ballCollisionIndex][1],
+                 pt2=utils.avgPoint(pointsBeforeCollision),
+                 color=(0, 255, 0), thickness=2)
+        cv2.line(img=image, pt1=self.ballHistory[self.ballCollisionIndex][1],
+                 pt2=utils.avgPoint(pointsAfterCollision),
+                 color=(0, 0, 255), thickness=2)
+        self.displayImageInFrame(1, 0, image=image)
+
     def displayVARImage(self, frameName):
         image = cv2.imread(frameName)
         for pos in self.ballHistory:
-            cv2.circle(img=image, center=pos[1], radius=pos[2], color=(0, 255, 0), thickness=3)
+            cv2.circle(img=image, center=pos[1], radius=pos[2], color=(0, 255, 0), thickness=2)
         self.displayImageInFrame(1, 0, image=image)
 
     def displayImageInFrame(self, row, column, frameName=None, image=None):
