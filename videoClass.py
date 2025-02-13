@@ -18,12 +18,10 @@ class HockeyVideo:
         self.currentImage = None
         self.mouseX = None
         self.mouseY = None
-        self.zoom = 1
+        self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
         self.frameJump = frameJump  # How many frames are displayed e.g: frameJump = 2, only frame 0, 2, 4, 6 will play
         self.fps = 30  # Video FPS, redefined when a video is submitted. 30 is standard?
         self.size = (750, 500)
-        self.scrollX = self.size[0]/2
-        self.scrollY = self.size[1]/2
         if not debug:
             self.separateFrames()  # Turns the video into a sequence of frames
         utils.tempClassifyFramesRand()  # Randomly assigns values to the frames (no model working yet)
@@ -96,7 +94,6 @@ class HockeyVideo:
                     self.displayImageInFrame(1, 0, frameName=frameName)
                     self.isPaused = True
             if self.manualVARMode:
-                print(self.scrollX, self.scrollY, end=' | ')
                 if self.VARStage[0] < self.endStage:
                     self.displayVARImage(frameName)
                     if self.mouseX != None and self.mouseY != None:
@@ -141,7 +138,8 @@ class HockeyVideo:
             self.frame.configure(bg='green' if utils.extractConfidenceVal(frameName) == 0 else 'red')
         else:
             self.frame.configure(bg='red')
-        image = self.zoomImage(image)
+        if self.boundingBox['topLeft'] != None and self.boundingBox['width'] != None and self.boundingBox['height'] != None:
+            image = image[self.boundingBox['topLeft'][1]:self.boundingBox['topLeft'][1]+self.boundingBox['height'], self.boundingBox['topLeft'][0]:self.boundingBox['topLeft'][0]+self.boundingBox['width']]
         frameImg = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
         if self.lastImage != None:
             self.lastImage.destroy()
@@ -151,29 +149,23 @@ class HockeyVideo:
         self.currentImage.image = frameImg
         self.currentImage.grid(row=0, column=0, padx=5, pady=5)
         self.currentImage.bind('<Button-1>', self.getMousePos)
-        self.currentImage.bind('<MouseWheel>', self.scrollEvent)
+        self.currentImage.bind('<Button-2>', self.createBoundingBox)
         self.frame.grid(row=row, column=column, columnspan=6)
 
     def getMousePos(self, event):
-        print(self.frameNum)
         if self.manualVARMode:
-            #[i / 2 for i in image.shape[:-1]] if coord is None else coord[::-1]
-            self.mouseX = round((event.x/self.zoom)+self.topLeftX)
-            self.mouseY = round((event.y/self.zoom)+self.topLeftY)
+            self.mouseX = event.x
+            self.mouseY = event.y
 
-    def scrollEvent(self, event):
-        self.scrollX += (event.delta/120)*(event.x-self.size[0]/2)/self.zoom
-        self.scrollY += (event.delta/120)*(event.y-self.size[1]/2)/self.zoom
-        self.zoom = max(1, self.zoom + (event.delta/600))
-
-    def zoomImage(self, image, angle=0):
-        coord = None if self.scrollX == None or self.scrollY == None else (self.scrollX, self.scrollY)
-        cy, cx = [i / 2 for i in image.shape[:-1]] if coord is None else coord[::-1]
-
-        rot_mat = cv2.getRotationMatrix2D((cx, cy), angle, self.zoom)
-        result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
-
-        return result
+    def createBoundingBox(self, event):
+        if self.boundingBox['topLeft'] == None:
+            self.boundingBox['topLeft'] = (event.x, event.y)
+        elif self.boundingBox['width'] == None or self.boundingBox['height']:
+            self.boundingBox['width'] = self.boundingBox['topLeft'][0]-event.x
+            self.boundingBox['height'] = self.boundingBox['topLeft'][1]-event.y
+        else:
+            self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
+        print(self.boundingBox)
 
     def endManualVAR(self, event):
         self.manualVARMode = False
