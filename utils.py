@@ -10,6 +10,11 @@ from PIL import ImageTk, Image
 def roundToNearest(num, base):
     return round(num/base)*base
 
+def avgPoint(points):
+    pointsx = [pos[0] for pos in points]
+    pointsy = [pos[1] for pos in points]
+    return (round(sum(pointsx)/len(pointsx)), round(sum(pointsy)/len(pointsy)))
+
 def openImage(path):
     image = Image.open(path)
     image = ImageTk.PhotoImage(image)
