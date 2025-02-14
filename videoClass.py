@@ -1,5 +1,3 @@
-import copy
-import math
 import cv2
 import os
 import glob
@@ -19,6 +17,7 @@ class HockeyVideo:
         self.mouseX = None
         self.mouseY = None
         self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
+        self.scale = 1
         self.frameJump = frameJump  # How many frames are displayed e.g: frameJump = 2, only frame 0, 2, 4, 6 will play
         self.fps = 30  # Video FPS, redefined when a video is submitted. 30 is standard?
         self.size = (750, 500)
@@ -140,6 +139,7 @@ class HockeyVideo:
             self.frame.configure(bg='red')
         if self.boundingBox['topLeft'] != None and self.boundingBox['width'] != None and self.boundingBox['height'] != None:
             image = image[self.boundingBox['topLeft'][1]:self.boundingBox['topLeft'][1]+self.boundingBox['height'], self.boundingBox['topLeft'][0]:self.boundingBox['topLeft'][0]+self.boundingBox['width']]
+            image = self.zoomOnBoundingBox(image)
         frameImg = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
         if self.lastImage != None:
             self.lastImage.destroy()
@@ -149,23 +149,35 @@ class HockeyVideo:
         self.currentImage.image = frameImg
         self.currentImage.grid(row=0, column=0, padx=5, pady=5)
         self.currentImage.bind('<Button-1>', self.getMousePos)
-        self.currentImage.bind('<Button-2>', self.createBoundingBox)
+        self.currentImage.bind('<Button-3>', self.createBoundingBox)
         self.frame.grid(row=row, column=column, columnspan=6)
 
     def getMousePos(self, event):
         if self.manualVARMode:
             self.mouseX = event.x
             self.mouseY = event.y
+            if self.boundingBox['topLeft'] != None and self.boundingBox['width'] != None and self.boundingBox['height'] != None:
+                self.mouseX = round((self.mouseX/self.scale) + self.boundingBox['topLeft'][0])
+                self.mouseY = round((self.mouseY/self.scale) + self.boundingBox['topLeft'][1])
 
     def createBoundingBox(self, event):
         if self.boundingBox['topLeft'] == None:
-            self.boundingBox['topLeft'] = (event.x, event.y)
-        elif self.boundingBox['width'] == None or self.boundingBox['height']:
-            self.boundingBox['width'] = self.boundingBox['topLeft'][0]-event.x
-            self.boundingBox['height'] = self.boundingBox['topLeft'][1]-event.y
+            self.boundingBox['topLeft'] = [event.x, event.y]
+        elif self.boundingBox['width'] == None or self.boundingBox['height'] == None:
+            self.boundingBox['width'] = abs(event.x-self.boundingBox['topLeft'][0])
+            self.boundingBox['height'] = abs(event.y-self.boundingBox['topLeft'][1])
+            if event.x < self.boundingBox['topLeft'][0]:
+                self.boundingBox['topLeft'][0] = event.x
+            if event.y < self.boundingBox['topLeft'][1]:
+                self.boundingBox['topLeft'][1] = event.y
         else:
             self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
-        print(self.boundingBox)
+
+    def zoomOnBoundingBox(self, image):
+        height, width = image.shape[:2]
+        self.scale = min(self.size[0] / width, self.size[1] / height)
+        image = cv2.resize(image, (0, 0), fx=self.scale, fy=self.scale)
+        return image
 
     def endManualVAR(self, event):
         self.manualVARMode = False
