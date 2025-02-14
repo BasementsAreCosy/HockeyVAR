@@ -1,4 +1,3 @@
-import copy
 import cv2
 import os
 import glob
@@ -17,8 +16,11 @@ class HockeyVideo:
         self.currentImage = None
         self.mouseX = None
         self.mouseY = None
+        self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
+        self.scale = 1
         self.frameJump = frameJump  # How many frames are displayed e.g: frameJump = 2, only frame 0, 2, 4, 6 will play
         self.fps = 30  # Video FPS, redefined when a video is submitted. 30 is standard?
+        self.size = (750, 500)
         if not debug:
             self.separateFrames()  # Turns the video into a sequence of frames
         utils.tempClassifyFramesRand()  # Randomly assigns values to the frames (no model working yet)
@@ -50,7 +52,7 @@ class HockeyVideo:
             try:
                 success, image = vidObj.read()
                 if count % self.frameJump == 0:
-                    image = cv2.resize(image, (750, 500), interpolation=cv2.INTER_CUBIC)
+                    image = cv2.resize(image, self.size, interpolation=cv2.INTER_CUBIC)
                     cv2.imwrite(f'footage/{count}-predval.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
                 count += 1
             except:
@@ -90,20 +92,30 @@ class HockeyVideo:
                     self.displayImageInFrame(1, 0, frameName=frameName)
                     self.isPaused = True
             if self.manualVARMode:
-                if self.VARStage < self.endStage:
+                if self.VARStage[0] < self.endStage:
+                    self.displayVARImage(frameName)
                     if self.mouseX != None and self.mouseY != None:
-                        self.ballHistory.append((self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump], (self.mouseX, self.mouseY), 5))
-                        frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                        if utils.extractConfidenceVal(frameName) != 0:
-                            self.ballCollisionIndex = len(self.ballHistory) - 1
-                        self.mouseX = None
-                        self.mouseY = None
-                        self.VARStage += 1
-                        while frameName == self.ballHistory[-1][0] or frameName == None:
-                            if utils.roundToNearest(self.frameNum + comparisonFrameDifference/self.endStage, self.frameJump) <= self.lastFrame:
-                                self.frameNum += comparisonFrameDifference/self.endStage
-                                frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                        self.displayVARImage(frameName)
+                        if self.VARStage[1] == 'left':
+                            clickLocation = (self.mouseX, self.mouseY)
+                            self.mouseX = None
+                            self.mouseY = None
+                            self.VARStage[1] = 'right'
+                        elif self.VARStage[1] == 'right':
+                            self.ballHistory.append((self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump], ((clickLocation[0]+self.mouseX)//2, self.mouseY), abs(self.mouseX-clickLocation[0])//2))
+                            frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
+                            self.mouseX = None
+                            self.mouseY = None
+                            self.VARStage[0] += 1
+                            self.VARStage[1] = 'left'
+                            while frameName == self.ballHistory[-1][0] or frameName == None:
+                                if utils.roundToNearest(self.frameNum + comparisonFrameDifference/self.endStage, self.frameJump) <= self.lastFrame:
+                                    self.frameNum += comparisonFrameDifference/self.endStage
+                                    frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
+                                    if utils.extractConfidenceVal(frameName) != 0:
+                                        self.ballCollisionPos = self.ballHistory[-1][1]
+                        self.VARInstructionLabel = tk.Label(self.root,
+                                                            text=f'Please select the {self.VARStage[1]}-most point of the ball.')
+                        self.VARInstructionLabel.grid(row=0, column=1)
                 else:
                     self.displayVARResult()
                     self.ballHistory = []
@@ -146,11 +158,14 @@ class HockeyVideo:
 
     def displayImageInFrame(self, row, column, frameName=None, image=None):
         if frameName != None:
-            frameImg = utils.openImage(frameName)
+            image = cv2.imread(frameName)
             self.frame.configure(bg='green' if utils.extractConfidenceVal(frameName) == 0 else 'red')
         else:
-            frameImg = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
             self.frame.configure(bg='red')
+        if self.boundingBox['topLeft'] != None and self.boundingBox['width'] != None and self.boundingBox['height'] != None:
+            image = image[self.boundingBox['topLeft'][1]:self.boundingBox['topLeft'][1]+self.boundingBox['height'], self.boundingBox['topLeft'][0]:self.boundingBox['topLeft'][0]+self.boundingBox['width']]
+            image = self.zoomOnBoundingBox(image)
+        frameImg = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
         if self.lastImage != None:
             self.lastImage.destroy()
         if self.currentImage != None:
@@ -159,13 +174,35 @@ class HockeyVideo:
         self.currentImage.image = frameImg
         self.currentImage.grid(row=0, column=0, padx=5, pady=5)
         self.currentImage.bind('<Button-1>', self.getMousePos)
+        self.currentImage.bind('<Button-3>', self.createBoundingBox)
         self.frame.grid(row=row, column=column, columnspan=6)
 
     def getMousePos(self, event):
-        print(self.frameNum)
         if self.manualVARMode:
             self.mouseX = event.x
             self.mouseY = event.y
+            if self.boundingBox['topLeft'] != None and self.boundingBox['width'] != None and self.boundingBox['height'] != None:
+                self.mouseX = round((self.mouseX/self.scale) + self.boundingBox['topLeft'][0])
+                self.mouseY = round((self.mouseY/self.scale) + self.boundingBox['topLeft'][1])
+
+    def createBoundingBox(self, event):
+        if self.boundingBox['topLeft'] == None:
+            self.boundingBox['topLeft'] = [event.x, event.y]
+        elif self.boundingBox['width'] == None or self.boundingBox['height'] == None:
+            self.boundingBox['width'] = abs(event.x-self.boundingBox['topLeft'][0])
+            self.boundingBox['height'] = abs(event.y-self.boundingBox['topLeft'][1])
+            if event.x < self.boundingBox['topLeft'][0]:
+                self.boundingBox['topLeft'][0] = event.x
+            if event.y < self.boundingBox['topLeft'][1]:
+                self.boundingBox['topLeft'][1] = event.y
+        else:
+            self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
+
+    def zoomOnBoundingBox(self, image):
+        height, width = image.shape[:2]
+        self.scale = min(self.size[0] / width, self.size[1] / height)
+        image = cv2.resize(image, (0, 0), fx=self.scale, fy=self.scale)
+        return image
 
     def endManualVAR(self, event):
         self.manualVARMode = False
