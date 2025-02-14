@@ -47,6 +47,7 @@ cursor.execute('''
                 is_umpire BOOLEAN,
                 password TEXT NOT NULL
             );''')
+# Not covering User Auth and Encryption for NEA course. In practice and production, User Auth would be developed using appropriate libraries
 
 cursor.execute('''
             CREATE TABLE IF NOT EXISTS Player_Appearances
