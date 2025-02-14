@@ -33,10 +33,10 @@ class HockeyVideo:
         self.isPaused = False
         self.videoEnded = False  # Ends video threading when True
         self.manualVARMode = False
-        self.VARStage = [0, 'left']
+        self.VARStage = 0
         self.endStage = 5
         self.ballHistory = []
-        self.ballCollisionPos = None
+        self.ballCollisionIndex = None
 
     def separateFrames(self):
         files = glob.glob('footage/*')
@@ -61,7 +61,6 @@ class HockeyVideo:
     def displayFrames(self): # ONLY INVOKE AS THREAD
         comparisonFrameDifference = 12
         self.nextFrameDisplayTime = time.time()
-        clickLocation = None
         while True: # Thread: so while video exists, this always runs
             if self.videoEnded:
                 return  # When returned, the thread ends
@@ -80,11 +79,11 @@ class HockeyVideo:
                 if utils.extractConfidenceVal(frameName) == 1:  # Stutter frame when foot identified
                     time.sleep(1)
                     self.isPaused = True
-                    self.VARStage = [0, 'left']
+                    self.VARStage = 0
                     self.manualVARMode = True
                     self.frameNum -= comparisonFrameDifference/2
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                    self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the {self.VARStage[1]}-most point of the ball.')
+                    self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the centre of the ball.')
                     self.VARInstructionLabel.grid(row=0, column=1)
                     self.displayImageInFrame(1, 0, frameName=frameName)
                 elif utils.roundToNearest(self.frameNum + self.frameJump, self.frameJump) <= self.lastFrame:
@@ -118,6 +117,10 @@ class HockeyVideo:
                                                             text=f'Please select the {self.VARStage[1]}-most point of the ball.')
                         self.VARInstructionLabel.grid(row=0, column=1)
                 else:
+                    self.displayVARResult()
+                    self.ballHistory = []
+                    self.ballCollisionIndex = None
+                    time.sleep(3)
                     self.VARInstructionLabel.destroy()
                     self.manualVARMode = False
                     if self.frameNum + self.frameJump <= self.lastFrame:
@@ -125,10 +128,32 @@ class HockeyVideo:
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                     self.displayImageInFrame(1, 0, frameName=frameName)
 
+    def displayVARResult(self):
+        pointsBeforeCollision = []
+        pointsAfterCollision = []
+        image = cv2.imread(self.ballHistory[self.ballCollisionIndex][0])
+        for i in range(len(self.ballHistory)):
+            if i < self.ballCollisionIndex:
+                pointsBeforeCollision.append(self.ballHistory[i][1])
+                colour = (0, 255, 0)
+            elif i == self.ballCollisionIndex:
+                colour = (0, 127, 255)
+            else:
+                pointsAfterCollision.append(self.ballHistory[i][1])
+                colour = (0, 0, 255)
+            cv2.circle(img=image, center=self.ballHistory[i][1], radius=self.ballHistory[i][2], color=colour, thickness=1)
+        cv2.line(img=image, pt1=self.ballHistory[self.ballCollisionIndex][1],
+                 pt2=utils.avgPoint(pointsBeforeCollision),
+                 color=(0, 255, 0), thickness=2)
+        cv2.line(img=image, pt1=self.ballHistory[self.ballCollisionIndex][1],
+                 pt2=utils.avgPoint(pointsAfterCollision),
+                 color=(0, 0, 255), thickness=2)
+        self.displayImageInFrame(1, 0, image=image)
+
     def displayVARImage(self, frameName):
         image = cv2.imread(frameName)
         for pos in self.ballHistory:
-            cv2.circle(img=image, center=pos[1], radius=pos[2], color=(0, 255, 0), thickness=3)
+            cv2.circle(img=image, center=pos[1], radius=pos[2], color=(0, 255, 0), thickness=2)
         self.displayImageInFrame(1, 0, image=image)
 
     def displayImageInFrame(self, row, column, frameName=None, image=None):
