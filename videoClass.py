@@ -33,7 +33,7 @@ class HockeyVideo:
         self.isPaused = False
         self.videoEnded = False  # Ends video threading when True
         self.manualVARMode = False
-        self.VARStage = 0
+        self.VARStage = [0, 'left']
         self.endStage = 5
         self.ballHistory = []
         self.ballCollisionIndex = None
@@ -79,11 +79,11 @@ class HockeyVideo:
                 if utils.extractConfidenceVal(frameName) == 1:  # Stutter frame when foot identified
                     time.sleep(1)
                     self.isPaused = True
-                    self.VARStage = 0
+                    self.VARStage[1] = 'left'
                     self.manualVARMode = True
                     self.frameNum -= comparisonFrameDifference/2
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                    self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the centre of the ball.')
+                    self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the {self.VARStage[1]}-most point of the ball.')
                     self.VARInstructionLabel.grid(row=0, column=1)
                     self.displayImageInFrame(1, 0, frameName=frameName)
                 elif utils.roundToNearest(self.frameNum + self.frameJump, self.frameJump) <= self.lastFrame:
@@ -103,6 +103,8 @@ class HockeyVideo:
                         elif self.VARStage[1] == 'right':
                             self.ballHistory.append((self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump], ((clickLocation[0]+self.mouseX)//2, self.mouseY), abs(self.mouseX-clickLocation[0])//2))
                             frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
+                            if utils.extractConfidenceVal(frameName) != 0:
+                                self.ballCollisionIndex = len(self.ballHistory) - 1
                             self.mouseX = None
                             self.mouseY = None
                             self.VARStage[0] += 1
@@ -120,7 +122,8 @@ class HockeyVideo:
                     self.displayVARResult()
                     self.ballHistory = []
                     self.ballCollisionIndex = None
-                    time.sleep(3)
+                    self.VARStage[0] = 0
+                    time.sleep(5)
                     self.VARInstructionLabel.destroy()
                     self.manualVARMode = False
                     if self.frameNum + self.frameJump <= self.lastFrame:
@@ -129,6 +132,7 @@ class HockeyVideo:
                     self.displayImageInFrame(1, 0, frameName=frameName)
 
     def displayVARResult(self):
+        self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
         pointsBeforeCollision = []
         pointsAfterCollision = []
         image = cv2.imread(self.ballHistory[self.ballCollisionIndex][0])
