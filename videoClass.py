@@ -8,6 +8,8 @@ from PIL import ImageTk, Image
 
 class HockeyVideo:
     def __init__(self, root, path, frameJump=1, debug=False):
+
+        # CONSTANTS - Python doesn't support this natively
         self.root = root  # Tkinter window
         self.root.bind('<Escape>', self.endManualVAR)
         self.path = path  # Video path
@@ -78,13 +80,12 @@ class HockeyVideo:
                     time.sleep(self.nextFrameDisplayTime - time.time())
                 if utils.extractConfidenceVal(frameName) == 1:  # Stutter frame when foot identified
                     time.sleep(1)
-                    self.isPaused = True
                     self.VARStage[1] = 'left'
                     self.manualVARMode = True
                     self.frameNum -= comparisonFrameDifference/2
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                     self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the {self.VARStage[1]}-most point of the ball.')
-                    self.VARInstructionLabel.grid(row=0, column=1)
+                    self.VARInstructionLabel.grid(row=0, column=2)
                     self.displayImageInFrame(1, 0, frameName=frameName)
                 elif utils.roundToNearest(self.frameNum + self.frameJump, self.frameJump) <= self.lastFrame:
                     self.frameNum += self.frameJump
@@ -117,19 +118,26 @@ class HockeyVideo:
                                         self.ballCollisionPos = self.ballHistory[-1][1]
                         self.VARInstructionLabel = tk.Label(self.root,
                                                             text=f'Please select the {self.VARStage[1]}-most point of the ball.')
-                        self.VARInstructionLabel.grid(row=0, column=1)
+                        self.VARInstructionLabel.grid(row=0, column=2)
                 else:
                     self.displayVARResult()
                     self.ballHistory = []
                     self.ballCollisionIndex = None
                     self.VARStage[0] = 0
-                    time.sleep(5)
+                    self.endVARButton = tk.Button(self.root, text='Continue', command=self.endVAR)
+                    self.endVARButton.grid(row=0, column=1)
+                    while self.manualVARMode:
+                        pass
+                    self.endVARButton.destroy()
                     self.VARInstructionLabel.destroy()
-                    self.manualVARMode = False
                     if self.frameNum + self.frameJump <= self.lastFrame:
                         self.frameNum += comparisonFrameDifference
+                    self.nextFrameDisplayTime = time.time()
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                     self.displayImageInFrame(1, 0, frameName=frameName)
+
+    def endVAR(self):
+        self.manualVARMode = False
 
     def displayVARResult(self):
         self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
