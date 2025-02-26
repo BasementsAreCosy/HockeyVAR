@@ -1,11 +1,15 @@
-import os
-import glob
 import re
-import pickle
-# import tensorflow as tf # todo: uncomment when uncorrupted model
-import numpy as np
-import random
+import math
 from PIL import ImageTk, Image
+
+def getVectorAngle(vec1, vec2):
+    return math.acos((vec1[0]*vec2[0]+vec1[1]*vec2[1])/(vectorMagnitude(vec1)*vectorMagnitude(vec2)))
+
+def vectorMagnitude(vec):
+    return math.sqrt(vec[0]**2 + vec[1]**2)
+
+def listMean(list):
+    return sum(list)/len(list)
 
 def roundToNearest(num, base):
     return round(num/base)*base
@@ -14,6 +18,19 @@ def avgPoint(points):
     pointsx = [pos[0] for pos in points]
     pointsy = [pos[1] for pos in points]
     return (round(sum(pointsx)/len(pointsx)), round(sum(pointsy)/len(pointsy)))
+
+def vectorWithinTolerance(target, angle, tolerance):
+    if target+tolerance >= math.pi:
+        if 0 <= angle <= target + tolerance - math.pi or target-tolerance <= angle < math.pi:
+            return True
+        return False
+    if target-tolerance < 0:
+        if math.pi+(target-tolerance) < angle < math.pi or 0 <= angle <= target+tolerance:
+            return True
+        return False
+    if target-tolerance <= angle <= target+tolerance:
+        return True
+    return False
 
 def openImage(path):
     image = Image.open(path)
@@ -28,53 +45,3 @@ def openImageResize(path, size):
 
 def extractFrameNum(e):
     return int(re.findall('\d+', e)[0])  # Used for finding the frame number from a path
-
-def extractConfidenceVal(e):
-    return int(re.findall('\d+', e)[1])  # Used for finding the frame confidence from a path
-
-def classifyFrames():
-    model = loadModel()
-    imageBatch = []
-    #for imagePath in glob.glob('footage/*'):
-        #image = tf.keras.preprocessing.image.load_img(imagePath, target_size=(160, 160))
-        #imageArray = tf.keras.preprocessing.image.img_to_array(image)
-        #imageBatch.append(imageArray)
-
-    imageBatch = np.array(imageBatch)
-    #imageBatch = tf.keras.applications.mobilenet_v2.preprocess_input(imageBatch)
-    predictionBatch = model.predict(imageBatch)
-    predictionLabels = (predictionBatch > 0.5).astype(int)
-
-def loadModel():
-    with open('model/model.pkl', 'rb') as f:
-        model = pickle.load(f)
-    return model
-
-frames = [93,
-258,
-447,
-798,
-870,
-1005,
-1434,
-1548,
-1596,
-1713,
-1773,
-2025,
-2361,
-2442,
-2622,
-2823,
-2892,
-3006]
-
-def tempClassifyFramesRand():
-    for imagePath in glob.glob('footage/*'):
-        changed = False
-        for frame in frames:
-            if str(frame) in imagePath:
-                os.rename(imagePath, imagePath.replace('predval', '1'))
-                changed = True
-        if not changed:
-            os.rename(imagePath, imagePath.replace('predval', '0'))

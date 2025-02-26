@@ -5,6 +5,7 @@ import time
 import utils
 import tkinter as tk
 from PIL import ImageTk, Image
+import math
 
 class HockeyVideo:
     def __init__(self, root, path, frameJump=1, debug=False):
@@ -14,6 +15,7 @@ class HockeyVideo:
         self.root.bind('<Escape>', self.endManualVAR)
         self.path = path  # Video path
         self.frame = tk.Frame(self.root, bg='green')  # Initialise the tkinter frame which holds the video
+        self.footIdentified = False
         self.lastImage = None
         self.currentImage = None
         self.mouseX = None
@@ -25,7 +27,6 @@ class HockeyVideo:
         self.size = (750, 500)
         if not debug:
             self.separateFrames()  # Turns the video into a sequence of frames
-        utils.tempClassifyFramesRand()  # Randomly assigns values to the frames (no model working yet)
         self.frames = glob.glob('footage/*')  # Creates a list of frame paths
         self.frames.sort(key=utils.extractFrameNum)  # Sorts into order
         self.lastFrame = utils.extractFrameNum(self.frames[-1])  # path of the last frame
@@ -55,7 +56,7 @@ class HockeyVideo:
                 success, image = vidObj.read()
                 if count % self.frameJump == 0:
                     image = cv2.resize(image, self.size, interpolation=cv2.INTER_CUBIC)
-                    cv2.imwrite(f'footage/{count}-predval.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
+                    cv2.imwrite(f'footage/{count}.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
                 count += 1
             except:
                 print('End of video?')
@@ -78,7 +79,8 @@ class HockeyVideo:
                 self.nextFrameDisplayTime += (self.frameJump/self.fps)/self.speed
                 if self.nextFrameDisplayTime - time.time() >= 0:  # Wait until time to show next frame
                     time.sleep(self.nextFrameDisplayTime - time.time())
-                if utils.extractConfidenceVal(frameName) == 1:  # Stutter frame when foot identified
+                if self.footIdentified:  # Stutter frame when foot identified
+                    self.footIdentified = False
                     time.sleep(1)
                     self.VARStage[1] = 'left'
                     self.manualVARMode = True
@@ -104,8 +106,6 @@ class HockeyVideo:
                         elif self.VARStage[1] == 'right':
                             self.ballHistory.append((self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump], ((clickLocation[0]+self.mouseX)//2, self.mouseY), abs(self.mouseX-clickLocation[0])//2))
                             frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                            if utils.extractConfidenceVal(frameName) != 0:
-                                self.ballCollisionIndex = len(self.ballHistory) - 1
                             self.mouseX = None
                             self.mouseY = None
                             self.VARStage[0] += 1
@@ -114,8 +114,6 @@ class HockeyVideo:
                                 if utils.roundToNearest(self.frameNum + comparisonFrameDifference/self.endStage, self.frameJump) <= self.lastFrame:
                                     self.frameNum += comparisonFrameDifference/self.endStage
                                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
-                                    if utils.extractConfidenceVal(frameName) != 0:
-                                        self.ballCollisionPos = self.ballHistory[-1][1]
                         self.VARInstructionLabel = tk.Label(self.root,
                                                             text=f'Please select the {self.VARStage[1]}-most point of the ball.')
                         self.VARInstructionLabel.grid(row=0, column=2)
@@ -143,23 +141,41 @@ class HockeyVideo:
         self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
         pointsBeforeCollision = []
         pointsAfterCollision = []
-        image = cv2.imread(self.ballHistory[self.ballCollisionIndex][0])
+        vectors = []
+        angles = []
+        averageAngle = 0
+        postCollisionIndexes = []
+        for i in range(len(self.ballHistory) - 1):
+            vectors.append((self.ballHistory[i + 1][1][0] - self.ballHistory[i][1][0], self.ballHistory[i + 1][1][1] - self.ballHistory[i][1][1]))
+        for i in range(len(vectors)-1):
+            angles.append(utils.getVectorAngle(vectors[i], vectors[i+1]))
+            if utils.vectorWithinTolerance(averageAngle, angles[-1], math.pi / 8):
+                averageAngle = utils.listMean(angles)
+            else:
+                angles.pop(-1)
+                postCollisionIndexes.append(i)
+        if postCollisionIndexes != []:
+            collisionIndex = min(postCollisionIndexes) + 1
+        else:
+            collisionIndex = self.endStage - 1
+        image = cv2.imread(self.ballHistory[collisionIndex][0])
         for i in range(len(self.ballHistory)):
-            if i < self.ballCollisionIndex:
+            if i < collisionIndex:
                 pointsBeforeCollision.append(self.ballHistory[i][1])
                 colour = (0, 255, 0)
-            elif i == self.ballCollisionIndex:
+            elif i == collisionIndex:
                 colour = (0, 127, 255)
             else:
                 pointsAfterCollision.append(self.ballHistory[i][1])
                 colour = (0, 0, 255)
             cv2.circle(img=image, center=self.ballHistory[i][1], radius=self.ballHistory[i][2], color=colour, thickness=1)
-        cv2.line(img=image, pt1=self.ballHistory[self.ballCollisionIndex][1],
+        cv2.line(img=image, pt1=self.ballHistory[collisionIndex][1],
                  pt2=utils.avgPoint(pointsBeforeCollision),
                  color=(0, 255, 0), thickness=2)
-        cv2.line(img=image, pt1=self.ballHistory[self.ballCollisionIndex][1],
-                 pt2=utils.avgPoint(pointsAfterCollision),
-                 color=(0, 0, 255), thickness=2)
+        if postCollisionIndexes != []:
+            cv2.line(img=image, pt1=self.ballHistory[collisionIndex][1],
+                     pt2=utils.avgPoint(pointsAfterCollision),
+                     color=(0, 0, 255), thickness=2)
         self.displayImageInFrame(1, 0, image=image)
 
     def displayVARImage(self, frameName):
@@ -171,7 +187,7 @@ class HockeyVideo:
     def displayImageInFrame(self, row, column, frameName=None, image=None):
         if frameName != None:
             image = cv2.imread(frameName)
-            self.frame.configure(bg='green' if utils.extractConfidenceVal(frameName) == 0 else 'red')
+            self.frame.configure(bg='green' if not self.footIdentified else 'red')
         else:
             self.frame.configure(bg='red')
         if self.boundingBox['topLeft'] != None and self.boundingBox['width'] != None and self.boundingBox['height'] != None:

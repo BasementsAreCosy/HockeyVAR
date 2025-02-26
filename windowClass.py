@@ -254,11 +254,9 @@ class hockeyTkinterWindow:
         submitVideoThread.start()
 
     def processVideo(self):
-        frameJump = 3
+        frameJump = 1
         filename = fd.askopenfilename()
-        self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump, debug=True)
-        # classifyFrames() # todo: test when model not corrupted
-        utils.tempClassifyFramesRand()
+        self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump, debug=False)
         displayThread = threading.Thread(target=self.video.displayFrames)
         displayThread.start()
         self.createButtonsWidget()
@@ -299,4 +297,5 @@ class hockeyTkinterWindow:
         self.frameControlFlag = 0
 
     def challenge(self):
-        pass
+        self.video.footIdentified = True
+        self.video.isPaused = False
