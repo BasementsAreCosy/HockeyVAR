@@ -106,6 +106,20 @@ rows = cursor.fetchall()
 for row in rows:
     print(row)
 
-window = windowClass.loginPage(conn, cursor)
+window = windowClass.menuWindow(conn, cursor)
 
 conn.commit()
+
+'''
+PLAN:
+
+Create People class (inheritance):
+    - Player:
+        ~ Polymorphism: challenges affects self
+    - Umpire:
+        ~ Polymorphism: challenges affects player/umpire selected in log in
+
+
+
+
+'''

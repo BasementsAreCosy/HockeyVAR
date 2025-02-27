@@ -8,7 +8,7 @@ import threading
 import time
 
 
-class loginPage:
+class menuWindow:
     def __init__(self, conn, cursor):
         self.root = tk.Tk()
         self.root.minsize(250, 300)
@@ -33,6 +33,9 @@ class loginPage:
 
         self.signUpButton = tk.Button(self.root, text='Sign Up', command=self.showSignUpFields)
         self.signUpButton.grid(row=0, column=1, pady=2)
+
+        self.lookupButton = tk.Button(self.root, text='Lookup Player', command=self.showLookupFields)
+        self.lookupButton.grid(row=0, column=2, pady=2)
 
         self.root.mainloop()
 
@@ -112,6 +115,9 @@ class loginPage:
         self.loginButton = tk.Button(self.root, text='Log In', command=self.showLoginFields)
         self.loginButton.grid(row=9, column=2, pady=2)
 
+    def showLookupFields(self):
+        pass
+
     def submitSignUp(self):
         if self.email.get() != '' and self.fName.get() != '' and self.lName.get() != '' and self.password.get() != '' and self.club.get() != '' and self.club.get() != 'Select/Enter Your Club' and self.team.get() != 'Select/Enter Your Team':
             self.clearLoginWindow()
@@ -143,6 +149,9 @@ class loginPage:
             self.badDetails = tk.Label(self.root, text='The details you have provided do not match an account.', fg='red')
             self.badDetails.grid(row=4, column=0, columnspan=2, pady=2)
 
+    def submitLookup(self):
+        pass
+
     def onClubChange(self, *args):
         self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.club.get() + '%',))
         clubs = self.cursor.fetchall()
@@ -154,6 +163,9 @@ class loginPage:
             teams = self.cursor.fetchall()
         self.clubDropDown['values'] = [club[1] for club in clubs]
         self.teamDropDown['values'] = [team[0] for team in teams]
+
+    def selectChallenger(self):
+        pass  # Select a challenger (almost identical to sign up/log in page) so that challenges can be aggregated
 
     def openHockeyWindow(self):
         hockeyTkinterWindow(root=self.root)
