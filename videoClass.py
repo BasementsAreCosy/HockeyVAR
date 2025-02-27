@@ -6,6 +6,7 @@ import utils
 import tkinter as tk
 from PIL import ImageTk, Image
 import math
+import numpy as np
 
 class HockeyVideo:
     def __init__(self, root, path, frameJump=1, debug=False):
@@ -20,6 +21,8 @@ class HockeyVideo:
         self.currentImage = None
         self.mouseX = None
         self.mouseY = None
+        self.previewX = None
+        self.previewY = None
         self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
         self.scale = 1
         self.frameJump = frameJump  # How many frames are displayed e.g: frameJump = 2, only frame 0, 2, 4, 6 will play
@@ -62,7 +65,7 @@ class HockeyVideo:
                 print('End of video?')
 
     def displayFrames(self): # ONLY INVOKE AS THREAD
-        comparisonFrameDifference = 12
+        comparisonFrameDifference = 10
         self.nextFrameDisplayTime = time.time()
         while True: # Thread: so while video exists, this always runs
             if self.videoEnded:
@@ -84,6 +87,8 @@ class HockeyVideo:
                     time.sleep(1)
                     self.VARStage[1] = 'left'
                     self.manualVARMode = True
+                    self.mouseX = None
+                    self.mouseY = None
                     self.frameNum -= comparisonFrameDifference/2
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                     self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the {self.VARStage[1]}-most point of the ball.')
@@ -119,13 +124,13 @@ class HockeyVideo:
                         self.VARInstructionLabel.grid(row=0, column=2)
                 else:
                     self.displayVARResult()
+                    while self.manualVARMode:
+                        pass
                     self.ballHistory = []
                     self.ballCollisionIndex = None
                     self.VARStage[0] = 0
                     self.endVARButton = tk.Button(self.root, text='Continue', command=self.endVAR)
                     self.endVARButton.grid(row=0, column=1)
-                    while self.manualVARMode:
-                        pass
                     self.endVARButton.destroy()
                     self.VARInstructionLabel.destroy()
                     if self.frameNum + self.frameJump <= self.lastFrame:
@@ -193,6 +198,11 @@ class HockeyVideo:
         if self.boundingBox['topLeft'] != None and self.boundingBox['width'] != None and self.boundingBox['height'] != None:
             image = image[self.boundingBox['topLeft'][1]:self.boundingBox['topLeft'][1]+self.boundingBox['height'], self.boundingBox['topLeft'][0]:self.boundingBox['topLeft'][0]+self.boundingBox['width']]
             image = self.zoomOnBoundingBox(image)
+        elif self.boundingBox['topLeft'] != None:
+            topLeft, bottomRight = utils.getValidRange(self.boundingBox['topLeft'], (self.previewX, self.previewY))
+            previewBox = image[topLeft[1]:bottomRight[1], topLeft[0]:bottomRight[0]]
+            previewBox = np.clip(previewBox + 50, 0, 255)
+            image[topLeft[1]:bottomRight[1], topLeft[0]:bottomRight[0]] = previewBox
         frameImg = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
         if self.lastImage != None:
             self.lastImage.destroy()
@@ -201,11 +211,12 @@ class HockeyVideo:
         self.currentImage = tk.Label(self.frame, image=frameImg)
         self.currentImage.image = frameImg
         self.currentImage.grid(row=0, column=0, padx=5, pady=5)
-        self.currentImage.bind('<Button-1>', self.getMousePos)
+        self.currentImage.bind('<Button-1>', self.getMouseBallPos)
         self.currentImage.bind('<Button-3>', self.createBoundingBox)
+        self.currentImage.bind('<Motion>', self.getMousePreviewBox)
         self.frame.grid(row=row, column=column, columnspan=6)
 
-    def getMousePos(self, event):
+    def getMouseBallPos(self, event):
         if self.manualVARMode:
             self.mouseX = event.x
             self.mouseY = event.y
@@ -225,6 +236,10 @@ class HockeyVideo:
                 self.boundingBox['topLeft'][1] = event.y
         else:
             self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
+
+    def getMousePreviewBox(self, event):
+        self.previewX = event.x
+        self.previewY = event.y
 
     def zoomOnBoundingBox(self, image):
         height, width = image.shape[:2]

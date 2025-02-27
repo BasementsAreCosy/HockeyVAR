@@ -55,6 +55,9 @@ class loginPage:
         self.hockeyWindowButton = tk.Button(self.root, text='Log In', command=self.submitLogin)
         self.hockeyWindowButton.grid(row=3, column=1, pady=2)
 
+        self.signUpButton = tk.Button(self.root, text='Sign Up', command=self.showSignUpFields)
+        self.signUpButton.grid(row=3, column=2, pady=2)
+
     def showSignUpFields(self):
         self.clearLoginWindow()
 
@@ -105,6 +108,9 @@ class loginPage:
 
         self.hockeyWindowButton = tk.Button(self.root, text='Sign Up', command=self.submitSignUp)
         self.hockeyWindowButton.grid(row=9, column=1, pady=2)
+
+        self.loginButton = tk.Button(self.root, text='Log In', command=self.showLoginFields)
+        self.loginButton.grid(row=9, column=2, pady=2)
 
     def submitSignUp(self):
         if self.email.get() != '' and self.fName.get() != '' and self.lName.get() != '' and self.password.get() != '' and self.club.get() != '' and self.club.get() != 'Select/Enter Your Club' and self.team.get() != 'Select/Enter Your Team':
@@ -256,7 +262,7 @@ class hockeyTkinterWindow:
     def processVideo(self):
         frameJump = 1
         filename = fd.askopenfilename()
-        self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump, debug=False)
+        self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump, debug=True)
         displayThread = threading.Thread(target=self.video.displayFrames)
         displayThread.start()
         self.createButtonsWidget()

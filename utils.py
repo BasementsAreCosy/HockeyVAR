@@ -45,3 +45,20 @@ def openImageResize(path, size):
 
 def extractFrameNum(e):
     return int(re.findall('\d+', e)[0])  # Used for finding the frame number from a path
+
+def getValidRange(p1, p2):
+    if p2[0] < p1[0]:
+        returnedX1 = p2[0]
+        returnedX2 = p1[0]
+    else:
+        returnedX1 = p1[0]
+        returnedX2 = p2[0]
+
+    if p2[1] < p1[1]:
+        returnedY1 = p2[1]
+        returnedY2 = p1[1]
+    else:
+        returnedY1 = p1[1]
+        returnedY2 = p2[1]
+
+    return (returnedX1, returnedY1), (returnedX2, returnedY2)
