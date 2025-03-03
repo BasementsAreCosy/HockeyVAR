@@ -10,11 +10,14 @@ import numpy as np
 
 class HockeyVideo:
     def __init__(self, root, path, frameJump=1, debug=False):
-
         # CONSTANTS - Python doesn't support this natively
         self.root = root  # Tkinter window
         self.root.bind('<Escape>', self.endManualVAR)
         self.path = path  # Video path
+        self.footagePath = ''
+        for i in range(len(self.path.split('/')) - 1):
+            self.footagePath = self.footagePath.join('/' + self.path.split('/')[i])
+        self.footagePath.join('/footage')
         self.frame = tk.Frame(self.root, bg='green')  # Initialise the tkinter frame which holds the video
         self.footIdentified = False
         self.lastImage = None
@@ -30,10 +33,10 @@ class HockeyVideo:
         self.size = (750, 500)
         if not debug:
             self.separateFrames()  # Turns the video into a sequence of frames
-        self.frames = glob.glob('footage/*')  # Creates a list of frame paths
+        self.frames = glob.glob(f'{self.footagePath}/*')  # Creates a list of frame paths - queue structure
         self.frames.sort(key=utils.extractFrameNum)  # Sorts into order
-        self.lastFrame = utils.extractFrameNum(self.frames[-1])  # path of the last frame
-        self.frameNum = 0  # Current frame being displayed
+        self.lastFrame = utils.extractFrameNum(self.frames[-1])  # path of the last frame - end of queue pointer
+        self.frameNum = 0  # Current frame being displayed - front of queue pointer
         self.nextFrameDisplayTime = time.time()  # Time when the next frame should display
         self.speed = 1  # Playback speed
         self.isPaused = False
@@ -45,7 +48,7 @@ class HockeyVideo:
         self.ballCollisionIndex = None
 
     def separateFrames(self):
-        files = glob.glob('footage/*')
+        files = glob.glob(f'{self.footagePath}/*')
         for f in files:
             os.remove(f)  # Clears frame directory
 
@@ -59,7 +62,7 @@ class HockeyVideo:
                 success, image = vidObj.read()
                 if count % self.frameJump == 0:
                     image = cv2.resize(image, self.size, interpolation=cv2.INTER_CUBIC)
-                    cv2.imwrite(f'footage/{count}.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
+                    cv2.imwrite(f'{self.footagePath}/{count}.jpg', image)  # Creates frame file, form orderSequence-modelConfidence
                 count += 1
             except:
                 print('End of video?')

@@ -10,12 +10,7 @@ cursor.execute('''
                 ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 home_team INTEGER NOT NULL REFERENCES Teams(ID),
                 away_team INTEGER NOT NULL REFERENCES Teams(ID),
-                date DATE,
-                scheduled_pushback DATETIME,
-                actual_pushback DATETIME,
-                video_link TEXT,
-                umpire_1 INTEGER REFERENCES People(ID),
-                umpire_2 INTEGER REFERENCES People(ID)
+                umpire INTEGER REFERENCES People(ID)
             );''')
 
 cursor.execute('''
@@ -50,41 +45,21 @@ cursor.execute('''
 # Not covering User Auth and Encryption for NEA course. In practice and production, User Auth would be developed using appropriate libraries
 
 cursor.execute('''
-            CREATE TABLE IF NOT EXISTS Player_Appearances
-            (
-                ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                match INTEGER REFERENCES Matches(ID),
-                player INTEGER REFERENCES People(ID)
-            );''')
-
-cursor.execute('''
             CREATE TABLE IF NOT EXISTS Clips
             (
                 ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                file_name TEXT,
-                match INTEGER REFERENCES Matches(ID),
-                time_from_start DATETIME,
-                length DECIMAL
-            );''')
-
-cursor.execute('''
-            CREATE TABLE IF NOT EXISTS Frames
-            (
-                ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                frame_num INTEGER NOT NULL,
-                confidence DECIMAL,
-                challenge BOOLEAN,
-                clip INTEGER REFERENCES Clips(ID),
-                is_foot BOOLEAN NOT NULL
+                path TEXT,
+                match_id INTEGER REFERENCES Matches(ID)
             );''')
 
 cursor.execute('''
             CREATE TABLE IF NOT EXISTS Challenges
             (
                 ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                frame_id INTEGER REFERENCES Frames(ID),
+                frame_num INTEGER,
                 challenger INTEGER REFERENCES People(ID),
                 challenge_correct BOOLEAN
+                clip_id INTEGER REFERENCES Clips(ID)
             );''')
 
 #cursor.execute('''INSERT INTO Clubs (name) VALUES (?)''', ('HailshamHC',))

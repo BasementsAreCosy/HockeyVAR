@@ -3,6 +3,7 @@ from tkinter import ttk
 from tkcalendar import DateEntry
 import utils
 import videoClass
+import peopleClasses
 from tkinter import filedialog as fd
 import threading
 import time
@@ -141,10 +142,13 @@ class menuWindow:
 
     def submitLogin(self):
         self.cursor.execute('''SELECT * FROM People WHERE email = ? AND password = ?;''', (self.email.get(), self.password.get()))
-
-        if self.cursor.fetchall() != []:
+        results = self.cursor.fetchall()
+        if results != []:
             self.clearLoginWindow()
-            self.openHockeyWindow()
+            if results[0][6]:
+                self.openHockeyWindow(peopleClasses.Umpire())
+            else:
+                self.openHockeyWindow(peopleClasses.Player())
         else:
             self.badDetails = tk.Label(self.root, text='The details you have provided do not match an account.', fg='red')
             self.badDetails.grid(row=4, column=0, columnspan=2, pady=2)
@@ -167,8 +171,8 @@ class menuWindow:
     def selectChallenger(self):
         pass  # Select a challenger (almost identical to sign up/log in page) so that challenges can be aggregated
 
-    def openHockeyWindow(self):
-        hockeyTkinterWindow(root=self.root)
+    def openHockeyWindow(self, user):
+        hockeyTkinterWindow(user, root=self.root)
 
     def clearLoginWindow(self):
         for widget in self.root.winfo_children():
@@ -176,9 +180,10 @@ class menuWindow:
 
 
 class hockeyTkinterWindow:
-    def __init__(self, root=None):
+    def __init__(self, user, root=None):
         self.frameControlFlag = 0  # -1 for rewinding, 1 for forwarding, 0 for all else
         self.video = None
+        self.user = user
         if root != None:
             self.createWindow(root=root)
         else:
