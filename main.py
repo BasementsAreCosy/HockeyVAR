@@ -62,9 +62,6 @@ cursor.execute('''
                 clip_id INTEGER REFERENCES Clips(ID)
             );''')
 
-#cursor.execute('''INSERT INTO Clubs (name) VALUES (?)''', ('HailshamHC',))
-#cursor.execute('''INSERT INTO people (first_name, last_name, date_of_birth, team, is_umpire, password) VALUES (?, ?, ?, ?, ?, ?);''', ('Fin', 'Jones', '05/09/2006', 1, False, '1234'))
-
 
 cursor.execute('''SELECT * FROM Clubs;''')
 rows = cursor.fetchall()

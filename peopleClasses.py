@@ -10,7 +10,7 @@ class Person:
 
 class Umpire(Person):
     def __init__(self):
-        super.__init__()
+        super().__init__()
 
     def recordChallenge(self):
         pass
@@ -20,4 +20,4 @@ class Umpire(Person):
 
 class Player(Person):
     def __init__(self):
-        super.__init__()
+        super().__init__()
