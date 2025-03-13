@@ -230,9 +230,12 @@ class menuWindow:
 
             self.cursor.execute('''INSERT OR IGNORE INTO Clubs (name) VALUES (?);''', (self.club.get(),))
             self.cursor.execute('''SELECT ID FROM Clubs WHERE name = ?;''', (self.club.get(),))
-            self.cursor.execute(
-                '''INSERT OR IGNORE INTO Teams (club_id, name, challenges, successful_challenges) VALUES (?, ?, ?, ?);''',
-                (self.cursor.fetchone()[0], self.team.get(), 0, 0))
+            club = self.cursor.fetchone()[0]
+            self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club, self.team.get()))
+            if self.cursor.fetchall() == []:
+                self.cursor.execute(
+                    '''INSERT OR IGNORE INTO Teams (club_id, name, challenges, successful_challenges) VALUES (?, ?, ?, ?);''',
+                    (club, self.team.get(), 0, 0))
             self.cursor.execute('''SELECT ID FROM Teams WHERE name = ?;''', (self.team.get(),))
             self.cursor.execute(
                 '''INSERT OR IGNORE INTO people (email, first_name, last_name, date_of_birth, team, is_umpire, password) VALUES (?, ?, ?, ?, ?, ?, ?);''',
@@ -259,12 +262,16 @@ class menuWindow:
             self.badDetails.grid(row=4, column=0, columnspan=2, pady=2)
 
     def submitLookup(self):
-        self.cursor.execute('''SELECT * FROM People WHERE club = ? AND team = ? AND f_name = ? AND l_name = ? AND dob = ?;''',
-                            (self.club.get(), self.team.get(), self.fName.get(), self.lName.get(), self.dob.get()))
+        self.cursor.execute('''SELECT * FROM Clubs WHERE name = ?;''', (self.club.get(),))
+        club = self.cursor.fetchone()[0]
+        self.cursor.execute('''SELECT * FROM Teams WHERE name = ? AND club_id = ?;''', (self.team.get(), club))
+        team = self.cursor.fetchone()[0]
+        self.cursor.execute('''SELECT * FROM People WHERE team = ? AND first_name = ? AND last_name = ? AND date_of_birth = ?;''',
+                            (team, self.fName.get(), self.lName.get(), self.dob.get()))
         results = self.cursor.fetchall()
         if results != []:
             self.clearLoginWindow()
-            if not self.user:
+            if not self.userLoggedIn:
                 pass
                 # todo: show persons details
             else:
@@ -313,7 +320,13 @@ class menuWindow:
     def displayLookup(self):
         pass
 
-    def openHockeyWindow(self, user):
+    def openHockeyWindow(self):
+        # todo: fix userdata and work out how to identify umpires
+        userData = ((self.club1.get(), self.team1.get()), (self.club2.get(), self.team2.get()))
+        if self:
+            user = peopleClasses.Umpire
+        else:
+            user = peopleClasses.Player
         self.cursor.execute('''INSERT OR IGNORE INTO Matches (home_team, away_team, umpire) VALUES (?, ?, ?);''')
         hockeyTkinterWindow(user, root=self.root)
 
