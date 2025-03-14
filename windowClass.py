@@ -15,29 +15,38 @@ class menuWindow:
         self.root.minsize(250, 300)
         self.conn = conn
         self.cursor = cursor
-        self.club = tk.StringVar()
-        self.club.set('Select/Enter Your Club')
-        self.team = tk.StringVar()
-        self.team.set('Select/Enter Your Team')
-        self.email = tk.StringVar()
-        self.fName = tk.StringVar()
-        self.lName = tk.StringVar()
-        self.dob = tk.StringVar()
-        self.isUmpire = tk.BooleanVar()
-        self.password = tk.StringVar()
-        self.club.trace_add('write', self.onClubChange)
+        self.tkClub = tk.StringVar()
+        self.tkClub.set('Select/Enter Your Club')
+        self.tkTeam = tk.StringVar()
+        self.tkTeam.set('Select/Enter Your Team')
+        self.tkEmail = tk.StringVar()
+        self.tkFName = tk.StringVar()
+        self.tkLName = tk.StringVar()
+        self.tkDob = tk.StringVar()
+        self.tkIsUmpire = tk.BooleanVar()
+        self.tkPassword = tk.StringVar()
+        self.tkClub.trace_add('write', self.onClubChange)
 
-        self.club1 = tk.StringVar()
-        self.club1.set('Select/Enter Your Club')
-        self.team1 = tk.StringVar()
-        self.team1.set('Select/Enter Your Team')
-        self.club1.trace_add('write', self.onClub1Change)
+        self.clubID = None
+        self.teamID = None
+        self.email = None
+        self.fName = None
+        self.lName = None
+        self.dob = None
+        self.isUmpire = None
+        self.password = None
 
-        self.club2 = tk.StringVar()
-        self.club2.set('Select/Enter The Opposition Club')
-        self.team2 = tk.StringVar()
-        self.team2.set('Select/Enter The Opposition Team')
-        self.club2.trace_add('write', self.onClub2Change)
+        self.tkClub1 = tk.StringVar()
+        self.tkClub1.set('Select/Enter Your Club')
+        self.tkTeam1 = tk.StringVar()
+        self.tkTeam1.set('Select/Enter Your Team')
+        self.tkClub1.trace_add('write', self.onClub1Change)
+
+        self.tkClub2 = tk.StringVar()
+        self.tkClub2.set('Select/Enter The Opposition Club')
+        self.tkTeam2 = tk.StringVar()
+        self.tkTeam2.set('Select/Enter The Opposition Team')
+        self.tkClub2.trace_add('write', self.onClub2Change)
 
         self.userLoggedIn = False
 
@@ -63,12 +72,12 @@ class menuWindow:
 
         self.emailLabel = tk.Label(self.root, text='Email:', justify='right')
         self.emailLabel.grid(row=1, column=0, pady=2)
-        self.emailEntry = tk.Entry(self.root, textvariable=self.email)
+        self.emailEntry = tk.Entry(self.root, textvariable=self.tkEmail)
         self.emailEntry.grid(row=1, column=1, pady=2)
 
         self.passwordLabel = tk.Label(self.root, text='Password:', justify='right')
         self.passwordLabel.grid(row=2, column=0, pady=2)
-        self.passwordEntry = tk.Entry(self.root, textvariable=self.password, show='*')
+        self.passwordEntry = tk.Entry(self.root, textvariable=self.tkPassword, show='*')
         self.passwordEntry.grid(row=2, column=1, pady=2)
 
         self.hockeyWindowButton = tk.Button(self.root, text='Log In', command=self.submitLogin)
@@ -86,43 +95,43 @@ class menuWindow:
         self.cursor.execute('''SELECT name FROM Clubs;''')
         clubs = self.cursor.fetchall()
 
-        self.clubDropDown = ttk.Combobox(self.root, textvariable=self.club, values=[club[0] for club in clubs])
+        self.clubDropDown = ttk.Combobox(self.root, textvariable=self.tkClub, values=[club[0] for club in clubs])
         self.clubDropDown.grid(row=1, column=1, columnspan=2, pady=2)
 
         self.cursor.execute('''SELECT name FROM Teams;''')
         teams = self.cursor.fetchall()
 
-        self.teamDropDown = ttk.Combobox(self.root, textvariable=self.team, values=[team[0] for team in teams])
+        self.teamDropDown = ttk.Combobox(self.root, textvariable=self.tkTeam, values=[team[0] for team in teams])
         self.teamDropDown.grid(row=2, column=1, columnspan=2, pady=2)
 
         self.emailLabel = tk.Label(self.root, text='Email:', justify='right')
         self.emailLabel.grid(row=3, column=0, pady=2)
-        self.emailEntry = tk.Entry(self.root, textvariable=self.email)
+        self.emailEntry = tk.Entry(self.root, textvariable=self.tkEmail)
         self.emailEntry.grid(row=3, column=1, pady=2)
 
         self.fNameLabel = tk.Label(self.root, text='First Name:', justify='right')
         self.fNameLabel.grid(row=4, column=0, pady=2)
-        self.fNameEntry = tk.Entry(self.root, textvariable=self.fName)
+        self.fNameEntry = tk.Entry(self.root, textvariable=self.tkFName)
         self.fNameEntry.grid(row=4, column=1, pady=2)
 
         self.lNameLabel = tk.Label(self.root, text='Last Name:', justify='right')
         self.lNameLabel.grid(row=5, column=0, pady=2)
-        self.lNameEntry = tk.Entry(self.root, textvariable=self.lName)
+        self.lNameEntry = tk.Entry(self.root, textvariable=self.tkLName)
         self.lNameEntry.grid(row=5, column=1, pady=2)
 
         self.dobLabel = tk.Label(self.root, text='Date Of Birth:', justify='right')
         self.dobLabel.grid(row=6, column=0, pady=2)
-        self.dobEntry = DateEntry(self.root, textvariable=self.dob)
+        self.dobEntry = DateEntry(self.root, textvariable=self.tkDob)
         self.dobEntry.grid(row=6, column=1, pady=2)
 
         self.umpireLabel = tk.Label(self.root, text='Are you an umpire?', justify='right')
         self.umpireLabel.grid(row=7, column=0, pady=2)
-        self.umpireEntry = tk.Checkbutton(self.root, variable=self.isUmpire)
+        self.umpireEntry = tk.Checkbutton(self.root, variable=self.tkIsUmpire)
         self.umpireEntry.grid(row=7, column=1, pady=2)
 
         self.passwordLabel = tk.Label(self.root, text='Password:', justify='right')
         self.passwordLabel.grid(row=8, column=0, pady=2)
-        self.passwordEntry = tk.Entry(self.root, textvariable=self.password, show='*')
+        self.passwordEntry = tk.Entry(self.root, textvariable=self.tkPassword, show='*')
         self.passwordEntry.grid(row=8, column=1, pady=2)
 
         self.hockeyWindowButton = tk.Button(self.root, text='Sign Up', command=self.submitSignUp)
@@ -140,28 +149,28 @@ class menuWindow:
         self.cursor.execute('''SELECT name FROM Clubs;''')
         clubs = self.cursor.fetchall()
 
-        self.clubDropDown = ttk.Combobox(self.root, textvariable=self.club, values=[club[0] for club in clubs])
+        self.clubDropDown = ttk.Combobox(self.root, textvariable=self.tkClub, values=[club[0] for club in clubs])
         self.clubDropDown.grid(row=1, column=1, columnspan=2, pady=2)
 
         self.cursor.execute('''SELECT name FROM Teams;''')
         teams = self.cursor.fetchall()
 
-        self.teamDropDown = ttk.Combobox(self.root, textvariable=self.team, values=[team[0] for team in teams])
+        self.teamDropDown = ttk.Combobox(self.root, textvariable=self.tkTeam, values=[team[0] for team in teams])
         self.teamDropDown.grid(row=2, column=1, columnspan=2, pady=2)
 
         self.fNameLabel = tk.Label(self.root, text='First Name:', justify='right')
         self.fNameLabel.grid(row=4, column=0, pady=2)
-        self.fNameEntry = tk.Entry(self.root, textvariable=self.fName)
+        self.fNameEntry = tk.Entry(self.root, textvariable=self.tkFName)
         self.fNameEntry.grid(row=4, column=1, pady=2)
 
         self.lNameLabel = tk.Label(self.root, text='Last Name:', justify='right')
         self.lNameLabel.grid(row=5, column=0, pady=2)
-        self.lNameEntry = tk.Entry(self.root, textvariable=self.lName)
+        self.lNameEntry = tk.Entry(self.root, textvariable=self.tkLName)
         self.lNameEntry.grid(row=5, column=1, pady=2)
 
         self.dobLabel = tk.Label(self.root, text='Date Of Birth:', justify='right')
         self.dobLabel.grid(row=6, column=0, pady=2)
-        self.dobEntry = DateEntry(self.root, textvariable=self.dob)
+        self.dobEntry = DateEntry(self.root, textvariable=self.tkDob)
         self.dobEntry.grid(row=6, column=1, pady=2)
 
         self.hockeyWindowButton = tk.Button(self.root, text='Look-Up', command=self.submitLookup)
@@ -182,35 +191,35 @@ class menuWindow:
         self.cursor.execute('''SELECT name FROM Clubs;''')
         clubs = self.cursor.fetchall()
 
-        self.club1DropDown = ttk.Combobox(self.root, textvariable=self.club1, values=[club[0] for club in clubs])
+        self.club1DropDown = ttk.Combobox(self.root, textvariable=self.tkClub1, values=[club[0] for club in clubs])
         self.club1DropDown.grid(row=1, column=0, columnspan=2, pady=2)
 
         self.cursor.execute('''SELECT name FROM Teams;''')
         teams = self.cursor.fetchall()
 
-        self.team1DropDown = ttk.Combobox(self.root, textvariable=self.team1, values=[team[0] for team in teams])
+        self.team1DropDown = ttk.Combobox(self.root, textvariable=self.tkTeam1, values=[team[0] for team in teams])
         self.team1DropDown.grid(row=2, column=0, columnspan=2, pady=2)
 
         self.cursor.execute('''SELECT name FROM Clubs;''')
         clubs = self.cursor.fetchall()
 
-        self.club2DropDown = ttk.Combobox(self.root, textvariable=self.club2, values=[club[0] for club in clubs])
+        self.club2DropDown = ttk.Combobox(self.root, textvariable=self.tkClub2, values=[club[0] for club in clubs])
         self.club2DropDown.grid(row=1, column=2, columnspan=2, pady=2)
 
         self.cursor.execute('''SELECT name FROM Teams;''')
         teams = self.cursor.fetchall()
 
-        self.team2DropDown = ttk.Combobox(self.root, textvariable=self.team2, values=[team[0] for team in teams])
+        self.team2DropDown = ttk.Combobox(self.root, textvariable=self.tkTeam2, values=[team[0] for team in teams])
         self.team2DropDown.grid(row=2, column=2, columnspan=2, pady=2)
 
         self.fNameLabel = tk.Label(self.root, text='Umpire First Name:', justify='right')
         self.fNameLabel.grid(row=4, column=0, pady=2)
-        self.fNameEntry = tk.Entry(self.root, textvariable=self.fName)
+        self.fNameEntry = tk.Entry(self.root, textvariable=self.tkFName)
         self.fNameEntry.grid(row=4, column=1, pady=2)
 
         self.lNameLabel = tk.Label(self.root, text='Umpire Last Name:', justify='right')
         self.lNameLabel.grid(row=5, column=0, pady=2)
-        self.lNameEntry = tk.Entry(self.root, textvariable=self.lName)
+        self.lNameEntry = tk.Entry(self.root, textvariable=self.tkLName)
         self.lNameEntry.grid(row=5, column=1, pady=2)
 
         self.hockeyWindowButton = tk.Button(self.root, text='Continue', command=self.openHockeyWindow)
@@ -220,27 +229,29 @@ class menuWindow:
         self.loginButton.grid(row=9, column=2, pady=2)
 
     def submitSignUp(self):
-        if self.email.get() != '' and self.fName.get() != '' and self.lName.get() != '' and self.password.get() != '' and self.club.get() != '' and self.club.get() != 'Select/Enter Your Club' and self.team.get() != 'Select/Enter Your Team':
+        if self.tkEmail.get() != '' and self.tkFName.get() != '' and self.tkLName.get() != '' and self.tkPassword.get() != '' and self.tkClub.get() != '' and self.tkClub.get() != 'Select/Enter Your Club' and self.tkTeam.get() != 'Select/Enter Your Team':
             self.clearLoginWindow()
-            if self.isUmpire.get():
+            if self.tkIsUmpire.get():
                 self.userLoggedIn = True
                 self.showLookupFields(text='Challenge Initiator:')
             else:
                 self.showMatchFields()
 
-            self.cursor.execute('''INSERT OR IGNORE INTO Clubs (name) VALUES (?);''', (self.club.get(),))
-            self.cursor.execute('''SELECT ID FROM Clubs WHERE name = ?;''', (self.club.get(),))
+            self.cursor.execute('''INSERT OR IGNORE INTO Clubs (name) VALUES (?);''', (self.tkClub.get(),))
+            self.cursor.execute('''SELECT ID FROM Clubs WHERE name = ?;''', (self.tkClub.get(),))
             club = self.cursor.fetchone()[0]
-            self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club, self.team.get()))
+            self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club, self.tkTeam.get()))
             if self.cursor.fetchall() == []:
                 self.cursor.execute(
                     '''INSERT OR IGNORE INTO Teams (club_id, name, challenges, successful_challenges) VALUES (?, ?, ?, ?);''',
-                    (club, self.team.get(), 0, 0))
-            self.cursor.execute('''SELECT ID FROM Teams WHERE name = ?;''', (self.team.get(),))
+                    (club, self.tkTeam.get(), 0, 0))
+            self.cursor.execute('''SELECT ID FROM Teams WHERE club_id = ? AND name = ?;''', (club, self.tkTeam.get()))
+            team = self.cursor.fetchone()[0]
             self.cursor.execute(
                 '''INSERT OR IGNORE INTO people (email, first_name, last_name, date_of_birth, team, is_umpire, password) VALUES (?, ?, ?, ?, ?, ?, ?);''',
-                (self.email.get(), self.fName.get(), self.lName.get(), self.dob.get(), self.cursor.fetchone()[0], self.isUmpire.get(),
-                 self.password.get()))
+                (self.tkEmail.get(), self.tkFName.get(), self.tkLName.get(), self.tkDob.get(), team, self.tkIsUmpire.get(),
+                 self.tkPassword.get()))
+            self.clubID, self.teamID, self.email, self.fName, self.lName, self.dob, self.isUmpire, self.password = club, team, self.tkEmail.get(), self.tkFName.get(), self.tkLName.get(), self.tkDob.get(), self.tkIsUmpire.get(), self.tkPassword.get()
         else:
             self.badDetails = tk.Label(self.root,
                                        text='Your details are not formatted correctly.\nMake sure each field has a value\nand your team is selected from the drop down.',
@@ -248,10 +259,13 @@ class menuWindow:
             self.badDetails.grid(row=10, column=0, columnspan=2, pady=2)
 
     def submitLogin(self):
-        self.cursor.execute('''SELECT * FROM People WHERE email = ? AND password = ?;''', (self.email.get(), self.password.get()))
+        self.cursor.execute('''SELECT * FROM People WHERE email = ? AND password = ?;''', (self.tkEmail.get(), self.tkPassword.get()))
         results = self.cursor.fetchall()
         if results != []:
             self.clearLoginWindow()
+            ID, self.email, self.fName, self.lName, self.dob, self.teamID, self.isUmpire, self.password = results[0]
+            self.cursor.execute('''SELECT club_id FROM teams WHERE ID = ?;''', (self.teamID,))
+            self.club = self.cursor.fetchone()[0]
             if results[0][6]:
                 self.userLoggedIn = True
                 self.showLookupFields(text='Challenge Initiator:')
@@ -262,12 +276,12 @@ class menuWindow:
             self.badDetails.grid(row=4, column=0, columnspan=2, pady=2)
 
     def submitLookup(self):
-        self.cursor.execute('''SELECT * FROM Clubs WHERE name = ?;''', (self.club.get(),))
+        self.cursor.execute('''SELECT * FROM Clubs WHERE name = ?;''', (self.tkClub.get(),))
         club = self.cursor.fetchone()[0]
-        self.cursor.execute('''SELECT * FROM Teams WHERE name = ? AND club_id = ?;''', (self.team.get(), club))
+        self.cursor.execute('''SELECT * FROM Teams WHERE name = ? AND club_id = ?;''', (self.tkTeam.get(), club))
         team = self.cursor.fetchone()[0]
         self.cursor.execute('''SELECT * FROM People WHERE team = ? AND first_name = ? AND last_name = ? AND date_of_birth = ?;''',
-                            (team, self.fName.get(), self.lName.get(), self.dob.get()))
+                            (team, self.tkFName.get(), self.tkLName.get(), self.tkDob.get()))
         results = self.cursor.fetchall()
         if results != []:
             self.clearLoginWindow()
@@ -282,7 +296,7 @@ class menuWindow:
             self.badDetails.grid(row=4, column=0, columnspan=2, pady=2)
 
     def onClubChange(self, *args):
-        self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.club.get() + '%',))
+        self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.tkClub.get() + '%',))
         clubs = self.cursor.fetchall()
         teams = []
         if clubs != []:
@@ -294,7 +308,7 @@ class menuWindow:
         self.teamDropDown['values'] = [team[0] for team in teams]
 
     def onClub1Change(self, *args):
-        self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.club1.get() + '%',))
+        self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.tkClub1.get() + '%',))
         clubs = self.cursor.fetchall()
         teams = []
         if clubs != []:
@@ -306,7 +320,7 @@ class menuWindow:
         self.team1DropDown['values'] = [team[0] for team in teams]
 
     def onClub2Change(self, *args):
-        self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.club2.get() + '%',))
+        self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.tkClub2.get() + '%',))
         clubs = self.cursor.fetchall()
         teams = []
         if clubs != []:
@@ -321,13 +335,27 @@ class menuWindow:
         pass
 
     def openHockeyWindow(self):
-        # todo: fix userdata and work out how to identify umpires
-        userData = ((self.club1.get(), self.team1.get()), (self.club2.get(), self.team2.get()))
-        if self:
-            user = peopleClasses.Umpire
+        userData = ((self.tkClub1.get(), self.tkTeam1.get()), (self.tkClub2.get(), self.tkTeam2.get()))
+
+        self.cursor.execute('''SELECT * FROM Clubs WHERE name = ?;''', (userData[0][0],))
+        club1ID = self.cursor.fetchone()[0]
+        self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club1ID, userData[0][1]))
+        team1ID = self.cursor.fetchone()[0]
+        self.cursor.execute('''SELECT * FROM Clubs WHERE name = ?;''', (userData[1][0],))
+        club2ID = self.cursor.fetchone()[0]
+        self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club1ID, userData[1][1]))
+        team2ID = self.cursor.fetchone()[0]
+        self.cursor.execute('''INSERT OR IGNORE INTO Matches (home_team, away_team, umpire) VALUES (?, ?, ?);''',
+                            (team1ID, team2ID, self.isUmpire))
+
+        if self.isUmpire:
+            user = peopleClasses.Umpire(userData[0], userData[1])
         else:
-            user = peopleClasses.Player
-        self.cursor.execute('''INSERT OR IGNORE INTO Matches (home_team, away_team, umpire) VALUES (?, ?, ?);''')
+            if self.teamID == team1ID:
+                isHome = True
+            else:
+                isHome = False
+            user = peopleClasses.Player(userData[0], userData[1], isHome=isHome)
         hockeyTkinterWindow(user, root=self.root)
 
     def clearLoginWindow(self):
