@@ -1,5 +1,6 @@
 class Person:
-    def __init__(self, home, away):
+    def __init__(self, userID, home, away):
+        self.userID = userID
         self.home = home
         self.away = away
 
@@ -10,8 +11,9 @@ class Person:
         pass
 
 class Umpire(Person):
-    def __init__(self, home, away, isHome=None):
-        super().__init__(home, away)
+    def __init__(self, challengerID, home, away, umpireId=None, isHome=None):
+        self.umpireID = umpireId
+        super().__init__(challengerID, home, away)
 
     def recordChallenge(self):
         pass
@@ -20,9 +22,9 @@ class Umpire(Person):
         pass
 
 class Player(Person):
-    def __init__(self, home, away, isHome):
-        super().__init__(home, away)
+    def __init__(self, userID, home, away, isHome):
         self.isHome = isHome
+        super().__init__(userID, home, away)
 
     def getTeam(self):
         if self.isHome:
