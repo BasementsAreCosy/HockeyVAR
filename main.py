@@ -10,7 +10,8 @@ cursor.execute('''
                 ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 home_team INTEGER NOT NULL REFERENCES Teams(ID),
                 away_team INTEGER NOT NULL REFERENCES Teams(ID),
-                umpire INTEGER REFERENCES People(ID)
+                umpire INTEGER REFERENCES People(ID),
+                date DATE
             );''')
 
 cursor.execute('''
@@ -58,22 +59,42 @@ cursor.execute('''
                 ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 frame_num INTEGER,
                 challenger INTEGER REFERENCES People(ID),
-                challenge_correct BOOLEAN
+                challenge_correct BOOLEAN,
                 clip_id INTEGER REFERENCES Clips(ID)
             );''')
 
+print('Matches:')
+cursor.execute('''SELECT * FROM Matches;''')
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
 
+print('Clips:')
+cursor.execute('''SELECT * FROM Clips;''')
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
+
+print('Clubs:')
 cursor.execute('''SELECT * FROM Clubs;''')
 rows = cursor.fetchall()
 for row in rows:
     print(row)
 
+print('Teams:')
 cursor.execute('''SELECT * FROM Teams;''')
 rows = cursor.fetchall()
 for row in rows:
     print(row)
 
+print('People:')
 cursor.execute('''SELECT * FROM People;''')
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
+
+print('Challenges')
+cursor.execute('''SELECT * FROM Challenges;''')
 rows = cursor.fetchall()
 for row in rows:
     print(row)
