@@ -14,11 +14,10 @@ class HockeyVideo:
         self.root = root  # Tkinter window
         self.root.bind('<Escape>', self.endManualVAR)
         self.path = path  # Video path
-        self.footagePath = ''
-        for i in range(len(self.path.split('/')) - 1):
-            self.footagePath = self.footagePath.join('/' + self.path.split('/')[i])
-        self.footagePath.join('/footage')
+        self.footagePath = '/'.join(self.path.split('/')[:-1])
+        self.footagePath = self.footagePath + '/footage'
         self.frame = tk.Frame(self.root, bg='green')  # Initialise the tkinter frame which holds the video
+        self.challengeCorrect = None
         self.footIdentified = False
         self.lastImage = None
         self.currentImage = None
@@ -132,18 +131,18 @@ class HockeyVideo:
                     self.ballHistory = []
                     self.ballCollisionIndex = None
                     self.VARStage[0] = 0
-                    self.endVARButton = tk.Button(self.root, text='Continue', command=self.endVAR)
-                    self.endVARButton.grid(row=0, column=1)
-                    self.endVARButton.destroy()
+                    self.endVARPositiveButton = tk.Button(self.root, text='Challenger Correct', command=self.correctChallenge)
+                    self.endVARPositiveButton.grid(row=0, column=1)
+                    self.endVARPositiveButton.destroy()
+                    self.endVARNegativeButton = tk.Button(self.root, text='Challenger Incorrect', command=self.incorrectChallenge)
+                    self.endVARNegativeButton.grid(row=0, column=2)
+                    self.endVARNegativeButton.destroy()
                     self.VARInstructionLabel.destroy()
                     if self.frameNum + self.frameJump <= self.lastFrame:
                         self.frameNum += comparisonFrameDifference
                     self.nextFrameDisplayTime = time.time()
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                     self.displayImageInFrame(1, 0, frameName=frameName)
-
-    def endVAR(self):
-        self.manualVARMode = False
 
     def displayVARResult(self):
         self.boundingBox = {'topLeft': None, 'width': None, 'height': None}
@@ -249,6 +248,14 @@ class HockeyVideo:
         self.scale = min(self.size[0] / width, self.size[1] / height)
         image = cv2.resize(image, (0, 0), fx=self.scale, fy=self.scale)
         return image
+
+    def correctChallenge(self):
+        self.challengeCorrect = True
+        self.manualVARMode = False
+
+    def incorrectChallenge(self):
+        self.challengeCorrect = False
+        self.manualVARMode = False
 
     def endManualVAR(self, event):
         self.manualVARMode = False
