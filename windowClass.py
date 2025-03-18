@@ -7,6 +7,8 @@ import peopleClasses
 from tkinter import filedialog as fd
 import threading
 import time
+import datetime
+import sqlite3
 
 
 class menuWindow:
@@ -27,6 +29,8 @@ class menuWindow:
         self.tkPassword = tk.StringVar()
         self.tkClub.trace_add('write', self.onClubChange)
 
+        self.ID = None
+        self.challenger = None
         self.clubID = None
         self.teamID = None
         self.email = None
@@ -121,7 +125,7 @@ class menuWindow:
 
         self.dobLabel = tk.Label(self.root, text='Date Of Birth:', justify='right')
         self.dobLabel.grid(row=6, column=0, pady=2)
-        self.dobEntry = DateEntry(self.root, textvariable=self.tkDob)
+        self.dobEntry = DateEntry(self.root, textvariable=self.tkDob, date_pattern='dd-mm-yyyy')
         self.dobEntry.grid(row=6, column=1, pady=2)
 
         self.umpireLabel = tk.Label(self.root, text='Are you an umpire?', justify='right')
@@ -170,7 +174,7 @@ class menuWindow:
 
         self.dobLabel = tk.Label(self.root, text='Date Of Birth:', justify='right')
         self.dobLabel.grid(row=6, column=0, pady=2)
-        self.dobEntry = DateEntry(self.root, textvariable=self.tkDob)
+        self.dobEntry = DateEntry(self.root, textvariable=self.tkDob, date_pattern='dd-mm-yyyy')
         self.dobEntry.grid(row=6, column=1, pady=2)
 
         self.hockeyWindowButton = tk.Button(self.root, text='Look-Up', command=self.submitLookup)
@@ -248,10 +252,12 @@ class menuWindow:
             self.cursor.execute('''SELECT ID FROM Teams WHERE club_id = ? AND name = ?;''', (club, self.tkTeam.get()))
             team = self.cursor.fetchone()[0]
             self.cursor.execute(
-                '''INSERT OR IGNORE INTO people (email, first_name, last_name, date_of_birth, team, is_umpire, password) VALUES (?, ?, ?, ?, ?, ?, ?);''',
+                '''INSERT OR IGNORE INTO People (email, first_name, last_name, date_of_birth, team, is_umpire, password) VALUES (?, ?, ?, ?, ?, ?, ?);''',
                 (self.tkEmail.get(), self.tkFName.get(), self.tkLName.get(), self.tkDob.get(), team, self.tkIsUmpire.get(),
                  self.tkPassword.get()))
-            self.clubID, self.teamID, self.email, self.fName, self.lName, self.dob, self.isUmpire, self.password = club, team, self.tkEmail.get(), self.tkFName.get(), self.tkLName.get(), self.tkDob.get(), self.tkIsUmpire.get(), self.tkPassword.get()
+            self.cursor.execute('''SELECT ID FROM People WHERE email = ?;''', (self.tkEmail.get(),))
+            ID = self.cursor.fetchone()[0]
+            self.ID, self.clubID, self.teamID, self.email, self.fName, self.lName, self.dob, self.isUmpire, self.password = ID, club, team, self.tkEmail.get(), self.tkFName.get(), self.tkLName.get(), self.tkDob.get(), self.tkIsUmpire.get(), self.tkPassword.get()
         else:
             self.badDetails = tk.Label(self.root,
                                        text='Your details are not formatted correctly.\nMake sure each field has a value\nand your team is selected from the drop down.',
@@ -263,7 +269,7 @@ class menuWindow:
         results = self.cursor.fetchall()
         if results != []:
             self.clearLoginWindow()
-            ID, self.email, self.fName, self.lName, self.dob, self.teamID, self.isUmpire, self.password = results[0]
+            self.ID, self.email, self.fName, self.lName, self.dob, self.teamID, self.isUmpire, self.password = results[0]
             self.cursor.execute('''SELECT club_id FROM teams WHERE ID = ?;''', (self.teamID,))
             self.club = self.cursor.fetchone()[0]
             if results[0][6]:
@@ -282,8 +288,8 @@ class menuWindow:
         team = self.cursor.fetchone()[0]
         self.cursor.execute('''SELECT * FROM People WHERE team = ? AND first_name = ? AND last_name = ? AND date_of_birth = ?;''',
                             (team, self.tkFName.get(), self.tkLName.get(), self.tkDob.get()))
-        results = self.cursor.fetchall()
-        if results != []:
+        self.challenger = self.cursor.fetchone()
+        if self.challenger != []:
             self.clearLoginWindow()
             if not self.userLoggedIn:
                 pass
@@ -335,28 +341,31 @@ class menuWindow:
         pass
 
     def openHockeyWindow(self):
-        userData = ((self.tkClub1.get(), self.tkTeam1.get()), (self.tkClub2.get(), self.tkTeam2.get()))
+        matchData = ((self.tkClub1.get(), self.tkTeam1.get()), (self.tkClub2.get(), self.tkTeam2.get()))
 
-        self.cursor.execute('''SELECT * FROM Clubs WHERE name = ?;''', (userData[0][0],))
+        self.cursor.execute('''SELECT * FROM Clubs WHERE name = ?;''', (matchData[0][0],))
         club1ID = self.cursor.fetchone()[0]
-        self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club1ID, userData[0][1]))
+        self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club1ID, matchData[0][1]))
         team1ID = self.cursor.fetchone()[0]
-        self.cursor.execute('''SELECT * FROM Clubs WHERE name = ?;''', (userData[1][0],))
+        self.cursor.execute('''SELECT * FROM Clubs WHERE name = ?;''', (matchData[1][0],))
         club2ID = self.cursor.fetchone()[0]
-        self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club1ID, userData[1][1]))
+        self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club2ID, matchData[1][1]))
         team2ID = self.cursor.fetchone()[0]
-        self.cursor.execute('''INSERT OR IGNORE INTO Matches (home_team, away_team, umpire) VALUES (?, ?, ?);''',
-                            (team1ID, team2ID, self.isUmpire))
+        self.cursor.execute('''INSERT OR IGNORE INTO Matches (home_team, away_team, umpire, date) VALUES (?, ?, ?, ?);''',
+                            (team1ID, team2ID, self.ID, datetime.datetime.today().strftime('%d-%m-%Y')))
+        self.cursor.execute('''SELECT ID FROM Matches WHERE home_team = ? AND away_team = ? AND umpire = ? AND date = ?;''', (team1ID, team2ID, self.ID, datetime.datetime.today().strftime('%d-%m-%Y')))
+        matchID = self.cursor.fetchone()[0]
 
         if self.isUmpire:
-            user = peopleClasses.Umpire(userData[0], userData[1])
+            user = peopleClasses.Umpire(self.challenger[0], matchData[0], matchData[1], umpireId=self.ID)
         else:
             if self.teamID == team1ID:
                 isHome = True
             else:
                 isHome = False
-            user = peopleClasses.Player(userData[0], userData[1], isHome=isHome)
-        hockeyTkinterWindow(user, root=self.root)
+            user = peopleClasses.Player(self.ID, matchData[0], matchData[1], isHome=isHome)
+        self.clearLoginWindow()
+        hockeyTkinterWindow(matchID, user, self.conn, self.cursor, root=self.root)
 
     def clearLoginWindow(self):
         for widget in self.root.winfo_children():
@@ -364,9 +373,13 @@ class menuWindow:
 
 
 class hockeyTkinterWindow:
-    def __init__(self, user, root=None):
+    def __init__(self, matchID, user, conn, cursor, root=None):
         self.frameControlFlag = 0  # -1 for rewinding, 1 for forwarding, 0 for all else
         self.video = None
+        self.conn = conn
+        self.cursor = cursor
+        self.matchID = matchID
+        self.clipID = None
         self.user = user
         if root != None:
             self.createWindow(root=root)
@@ -447,6 +460,15 @@ class hockeyTkinterWindow:
 
             self.video.nextFrameDisplayTime = time.time()
 
+        if hasattr(self, 'video'):
+            if hasattr(self.video, 'correctChallenge'):
+                if self.video.correctChallenge != None:
+                    #self.conn = sqlite3.connect('hockey_video.db')
+                    #self.cursor = self.conn.cursor()
+                    #self.cursor.execute('''INSERT OR IGNORE INTO Challenges (frame_num, challenger, challenge_correct, clip_id) VALUES (?, ?, ?, ?);''', (self.video.frameNum, self.user.userID, self.video.challengeCorrect, self.clipID))
+                    self.video.correctChallenge = None
+                    #self.conn.commit()
+
         try:
             self.root.after(self.video.frameJump * 200, self.frameControlLoop)
         except:
@@ -457,12 +479,19 @@ class hockeyTkinterWindow:
             self.video.videoEnded = True
         except:
             print('no video')
+        self.conn.commit()
         submitVideoThread = threading.Thread(target=self.processVideo)
         submitVideoThread.start()
 
     def processVideo(self):
+        #self.conn = sqlite3.connect('hockey_video.db')
+        #self.cursor = self.conn.cursor()
         frameJump = 1
         filename = fd.askopenfilename()
+        #self.cursor.execute('''INSERT OR IGNORE INTO Clips (path, match_id) VALUES (?, ?)''', (filename, self.matchID))
+        #self.cursor.execute('''SELECT ID FROM Clips WHERE path = ? AND match_id = ?;''', (filename, self.matchID))
+        #self.clipID = self.cursor.fetchone()[0]
+        #self.conn.close()
         self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump, debug=True)
         displayThread = threading.Thread(target=self.video.displayFrames)
         displayThread.start()
