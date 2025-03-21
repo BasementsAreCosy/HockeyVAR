@@ -94,7 +94,7 @@ class HockeyVideo:
                     self.frameNum -= comparisonFrameDifference/2
                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                     self.VARInstructionLabel = tk.Label(self.root, text=f'Please select the {self.VARStage[1]}-most point of the ball.')
-                    self.VARInstructionLabel.grid(row=0, column=2)
+                    self.VARInstructionLabel.grid(row=0, column=3)
                     self.displayImageInFrame(1, 0, frameName=frameName)
                 elif utils.roundToNearest(self.frameNum + self.frameJump, self.frameJump) <= self.lastFrame:
                     self.frameNum += self.frameJump
@@ -123,19 +123,19 @@ class HockeyVideo:
                                     frameName = self.frames[utils.roundToNearest(self.frameNum, self.frameJump)//self.frameJump]
                         self.VARInstructionLabel = tk.Label(self.root,
                                                             text=f'Please select the {self.VARStage[1]}-most point of the ball.')
-                        self.VARInstructionLabel.grid(row=0, column=2)
+                        self.VARInstructionLabel.grid(row=0, column=3)
                 else:
                     self.displayVARResult()
-                    while self.manualVARMode:
-                        pass
                     self.ballHistory = []
                     self.ballCollisionIndex = None
                     self.VARStage[0] = 0
                     self.endVARPositiveButton = tk.Button(self.root, text='Challenger Correct', command=self.correctChallenge)
                     self.endVARPositiveButton.grid(row=0, column=1)
-                    self.endVARPositiveButton.destroy()
                     self.endVARNegativeButton = tk.Button(self.root, text='Challenger Incorrect', command=self.incorrectChallenge)
                     self.endVARNegativeButton.grid(row=0, column=2)
+                    while self.manualVARMode:
+                        pass
+                    self.endVARPositiveButton.destroy()
                     self.endVARNegativeButton.destroy()
                     self.VARInstructionLabel.destroy()
                     if self.frameNum + self.frameJump <= self.lastFrame:
