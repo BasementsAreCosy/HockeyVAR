@@ -41,7 +41,9 @@ cursor.execute('''
                 date_of_birth DATE,
                 team INTEGER REFERENCES Teams(ID),
                 is_umpire BOOLEAN,
-                password TEXT NOT NULL
+                password TEXT NOT NULL,
+                challenges INTEGER,
+                successful_challenges INTEGER
             );''')
 # Not covering User Auth and Encryption for NEA course. In practice and production, User Auth would be developed using appropriate libraries
 
@@ -99,20 +101,7 @@ rows = cursor.fetchall()
 for row in rows:
     print(row)
 
-window = windowClass.menuWindow(conn, cursor)
-
 conn.commit()
+conn.close()
 
-'''
-PLAN:
-
-Create People class (inheritance):
-    - Player:
-        ~ Polymorphism: challenges affects self
-    - Umpire:
-        ~ Polymorphism: challenges affects player/umpire selected in log in
-
-
-
-
-'''
+window = windowClass.menuWindow()
