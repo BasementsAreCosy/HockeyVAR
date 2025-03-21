@@ -12,11 +12,12 @@ import sqlite3
 
 
 class menuWindow:
-    def __init__(self, conn, cursor):
+    def __init__(self):
         self.root = tk.Tk()
         self.root.minsize(250, 300)
-        self.conn = conn
-        self.cursor = cursor
+        self.conn = sqlite3.connect('hockey_video.db')
+        self.cursor = self.conn.cursor()
+
         self.tkClub = tk.StringVar()
         self.tkClub.set('Select/Enter Your Club')
         self.tkTeam = tk.StringVar()
@@ -252,9 +253,9 @@ class menuWindow:
             self.cursor.execute('''SELECT ID FROM Teams WHERE club_id = ? AND name = ?;''', (club, self.tkTeam.get()))
             team = self.cursor.fetchone()[0]
             self.cursor.execute(
-                '''INSERT OR IGNORE INTO People (email, first_name, last_name, date_of_birth, team, is_umpire, password) VALUES (?, ?, ?, ?, ?, ?, ?);''',
+                '''INSERT OR IGNORE INTO People (email, first_name, last_name, date_of_birth, team, is_umpire, password, challenges, successful_challenges) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);''',
                 (self.tkEmail.get(), self.tkFName.get(), self.tkLName.get(), self.tkDob.get(), team, self.tkIsUmpire.get(),
-                 self.tkPassword.get()))
+                 self.tkPassword.get(), 0, 0))
             self.cursor.execute('''SELECT ID FROM People WHERE email = ?;''', (self.tkEmail.get(),))
             ID = self.cursor.fetchone()[0]
             self.ID, self.clubID, self.teamID, self.email, self.fName, self.lName, self.dob, self.isUmpire, self.password = ID, club, team, self.tkEmail.get(), self.tkFName.get(), self.tkLName.get(), self.tkDob.get(), self.tkIsUmpire.get(), self.tkPassword.get()
@@ -292,8 +293,7 @@ class menuWindow:
         if self.challenger != []:
             self.clearLoginWindow()
             if not self.userLoggedIn:
-                pass
-                # todo: show persons details
+                self.displayLookup()
             else:
                 self.showMatchFields()
         else:
@@ -365,7 +365,9 @@ class menuWindow:
                 isHome = False
             user = peopleClasses.Player(self.ID, matchData[0], matchData[1], isHome=isHome)
         self.clearLoginWindow()
-        hockeyTkinterWindow(matchID, user, self.conn, self.cursor, root=self.root)
+        self.conn.commit()
+        self.conn.close()
+        hockeyTkinterWindow(matchID, user, root=self.root)
 
     def clearLoginWindow(self):
         for widget in self.root.winfo_children():
@@ -373,11 +375,9 @@ class menuWindow:
 
 
 class hockeyTkinterWindow:
-    def __init__(self, matchID, user, conn, cursor, root=None):
+    def __init__(self, matchID, user, root=None):
         self.frameControlFlag = 0  # -1 for rewinding, 1 for forwarding, 0 for all else
         self.video = None
-        self.conn = conn
-        self.cursor = cursor
         self.matchID = matchID
         self.clipID = None
         self.user = user
@@ -461,13 +461,17 @@ class hockeyTkinterWindow:
             self.video.nextFrameDisplayTime = time.time()
 
         if hasattr(self, 'video'):
-            if hasattr(self.video, 'correctChallenge'):
-                if self.video.correctChallenge != None:
-                    #self.conn = sqlite3.connect('hockey_video.db')
-                    #self.cursor = self.conn.cursor()
-                    #self.cursor.execute('''INSERT OR IGNORE INTO Challenges (frame_num, challenger, challenge_correct, clip_id) VALUES (?, ?, ?, ?);''', (self.video.frameNum, self.user.userID, self.video.challengeCorrect, self.clipID))
-                    self.video.correctChallenge = None
-                    #self.conn.commit()
+            if hasattr(self.video, 'challengeCorrect'):
+                if self.video.challengeCorrect != None:
+                    conn = sqlite3.connect('hockey_video.db')
+                    cursor = conn.cursor()
+                    cursor.execute('''INSERT OR IGNORE INTO Challenges (frame_num, challenger, challenge_correct, clip_id) VALUES (?, ?, ?, ?);''', (self.video.frameNum, self.user.userID, self.video.challengeCorrect, self.clipID))
+                    successfulBool = 0
+                    if self.video.challengeCorrect:
+                        successfulBool = 1
+                    cursor.execute('''UPDATE People SET challenges = challenges + 1 AND successful_challenges = successful_challenges + ? WHERE ID = ?;''', (successfulBool, self.user.userID))
+                    self.video.challengeCorrect = None
+                    conn.commit()
 
         try:
             self.root.after(self.video.frameJump * 200, self.frameControlLoop)
@@ -479,19 +483,19 @@ class hockeyTkinterWindow:
             self.video.videoEnded = True
         except:
             print('no video')
-        self.conn.commit()
         submitVideoThread = threading.Thread(target=self.processVideo)
         submitVideoThread.start()
 
     def processVideo(self):
-        #self.conn = sqlite3.connect('hockey_video.db')
-        #self.cursor = self.conn.cursor()
+        conn = sqlite3.connect('hockey_video.db')
+        cursor = conn.cursor()
         frameJump = 1
         filename = fd.askopenfilename()
-        #self.cursor.execute('''INSERT OR IGNORE INTO Clips (path, match_id) VALUES (?, ?)''', (filename, self.matchID))
-        #self.cursor.execute('''SELECT ID FROM Clips WHERE path = ? AND match_id = ?;''', (filename, self.matchID))
-        #self.clipID = self.cursor.fetchone()[0]
-        #self.conn.close()
+        cursor.execute('''INSERT OR IGNORE INTO Clips (path, match_id) VALUES (?, ?)''', (filename, self.matchID))
+        cursor.execute('''SELECT ID FROM Clips WHERE path = ? AND match_id = ?;''', (filename, self.matchID))
+        self.clipID = cursor.fetchone()[0]
+        conn.commit()
+        conn.close()
         self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump, debug=True)
         displayThread = threading.Thread(target=self.video.displayFrames)
         displayThread.start()
