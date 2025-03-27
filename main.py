@@ -1,8 +1,10 @@
 import windowClass
 import sqlite3
 
-conn = sqlite3.connect('hockey_video.db')
+conn = sqlite3.connect('hockey_video.db')  # Create or connect to a database
 cursor = conn.cursor()
+
+### The following creates any missing tables in the database
 
 cursor.execute('''
             CREATE TABLE IF NOT EXISTS Matches
@@ -19,9 +21,7 @@ cursor.execute('''
             (
                 ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 club_id INTEGER NOT NULL REFERENCES Clubs(ID),
-                name TEXT NOT NULL,
-                challenges INTEGER,
-                successful_challenges INTEGER
+                name TEXT NOT NULL
             );''')
 
 cursor.execute('''
@@ -65,43 +65,7 @@ cursor.execute('''
                 clip_id INTEGER REFERENCES Clips(ID)
             );''')
 
-print('Matches:')
-cursor.execute('''SELECT * FROM Matches;''')
-rows = cursor.fetchall()
-for row in rows:
-    print(row)
-
-print('Clips:')
-cursor.execute('''SELECT * FROM Clips;''')
-rows = cursor.fetchall()
-for row in rows:
-    print(row)
-
-print('Clubs:')
-cursor.execute('''SELECT * FROM Clubs;''')
-rows = cursor.fetchall()
-for row in rows:
-    print(row)
-
-print('Teams:')
-cursor.execute('''SELECT * FROM Teams;''')
-rows = cursor.fetchall()
-for row in rows:
-    print(row)
-
-print('People:')
-cursor.execute('''SELECT * FROM People;''')
-rows = cursor.fetchall()
-for row in rows:
-    print(row)
-
-print('Challenges')
-cursor.execute('''SELECT * FROM Challenges;''')
-rows = cursor.fetchall()
-for row in rows:
-    print(row)
-
 conn.commit()
-conn.close()
+conn.close()  # Must commit and close before opening the window as sqlite does not function across several threads
 
-window = windowClass.menuWindow()
+window = windowClass.menuWindow()  # Initialises the Tkinter window
