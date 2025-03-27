@@ -236,50 +236,50 @@ class menuWindow:
         self.loginButton.grid(row=9, column=2, pady=2)
 
     def submitSignUp(self):
-        if self.tkEmail.get() != '' and self.tkFName.get() != '' and self.tkLName.get() != '' and self.tkPassword.get() != '' and self.tkClub.get() != '' and self.tkClub.get() != 'Select/Enter Your Club' and self.tkTeam.get() != 'Select/Enter Your Team':
+        if self.tkEmail.get() != '' and self.tkFName.get() != '' and self.tkLName.get() != '' and self.tkPassword.get() != '' and self.tkClub.get() != '' and self.tkClub.get() != 'Select/Enter Your Club' and self.tkTeam.get() != 'Select/Enter Your Team':  # If each field has contents
             self.clearLoginWindow()
             if self.tkIsUmpire.get():
-                self.userLoggedIn = True
+                self.userLoggedIn = True  # User is logged in and therefore can make challenges for others
                 self.showLookupFields(text='Challenge Initiator:')
             else:
-                self.showMatchFields()
+                self.showMatchFields()  # Straight to match fields as they are logging a match for themselves
 
-            self.cursor.execute('''INSERT OR IGNORE INTO Clubs (name) VALUES (?);''', (self.tkClub.get(),))
+            self.cursor.execute('''INSERT OR IGNORE INTO Clubs (name) VALUES (?);''', (self.tkClub.get(),))  # Add new club if it doesn't exist
             self.cursor.execute('''SELECT ID FROM Clubs WHERE name = ?;''', (self.tkClub.get(),))
             club = self.cursor.fetchone()[0]
             self.cursor.execute('''SELECT * FROM Teams WHERE club_id = ? AND name = ?;''', (club, self.tkTeam.get()))
             if self.cursor.fetchall() == []:
                 self.cursor.execute(
                     '''INSERT OR IGNORE INTO Teams (club_id, name) VALUES (?, ?);''',
-                    (club, self.tkTeam.get()))
+                    (club, self.tkTeam.get()))  # Add new team if it doesn't exist
             self.cursor.execute('''SELECT ID FROM Teams WHERE club_id = ? AND name = ?;''', (club, self.tkTeam.get()))
             team = self.cursor.fetchone()[0]
             self.cursor.execute(
                 '''INSERT OR IGNORE INTO People (email, first_name, last_name, date_of_birth, team, is_umpire, password, challenges, successful_challenges) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);''',
                 (self.tkEmail.get(), self.tkFName.get(), self.tkLName.get(), self.tkDob.get(), team, self.tkIsUmpire.get(),
-                 self.tkPassword.get(), 0, 0))
+                 self.tkPassword.get(), 0, 0))  # Add person
             self.cursor.execute('''SELECT ID FROM People WHERE email = ?;''', (self.tkEmail.get(),))
             ID = self.cursor.fetchone()[0]
             self.ID, self.clubID, self.teamID, self.email, self.fName, self.lName, self.dob, self.isUmpire, self.password = ID, club, team, self.tkEmail.get(), self.tkFName.get(), self.tkLName.get(), self.tkDob.get(), self.tkIsUmpire.get(), self.tkPassword.get()
         else:
             self.badDetails = tk.Label(self.root,
                                        text='Your details are not formatted correctly.\nMake sure each field has a value\nand your team is selected from the drop down.',
-                                       fg='red')
+                                       fg='red')  # Display when fields not entered fully
             self.badDetails.grid(row=10, column=0, columnspan=2, pady=2)
 
     def submitLogin(self):
         self.cursor.execute('''SELECT * FROM People WHERE email = ? AND password = ?;''', (self.tkEmail.get(), self.tkPassword.get()))
         results = self.cursor.fetchall()
-        if results != []:
+        if results != []:  # If Person exists
             self.clearLoginWindow()
             self.ID, self.email, self.fName, self.lName, self.dob, self.teamID, self.isUmpire, self.password, self.challenges, self.successfulChallenges = results[0]
             self.cursor.execute('''SELECT club_id FROM teams WHERE ID = ?;''', (self.teamID,))
             self.club = self.cursor.fetchone()[0]
             if results[0][6]:
                 self.userLoggedIn = True
-                self.showLookupFields(text='Challenge Initiator:')
+                self.showLookupFields(text='Challenge Initiator:')  # Move to select challenger if umpire
             else:
-                self.showMatchFields()
+                self.showMatchFields()  # If not umpire, self as challenger
         else:
             self.badDetails = tk.Label(self.root, text='The details you have provided do not match an account.', fg='red')
             self.badDetails.grid(row=4, column=0, columnspan=2, pady=2)
@@ -295,15 +295,15 @@ class menuWindow:
         if self.challenger != []:
             self.clearLoginWindow()
             if not self.userLoggedIn:
-                self.displayLookup()
+                self.displayLookup()  # Lookup rather than challenger
             else:
-                self.showMatchFields()
+                self.showMatchFields()  # Challenger
         else:
             self.badDetails = tk.Label(self.root, text='The details you have provided do not match an account.',
                                        fg='red')
             self.badDetails.grid(row=4, column=0, columnspan=2, pady=2)
 
-    def onClubChange(self, *args):
+    def onClubChange(self, *args):  # Used to display all teams and clubs that might be associated to the current input
         self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.tkClub.get() + '%',))
         clubs = self.cursor.fetchall()
         teams = []
@@ -315,7 +315,7 @@ class menuWindow:
         self.clubDropDown['values'] = [club[1] for club in clubs]
         self.teamDropDown['values'] = [team[0] for team in teams]
 
-    def onClub1Change(self, *args):
+    def onClub1Change(self, *args):  # Used to display all teams and clubs that might be associated to the current input
         self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.tkClub1.get() + '%',))
         clubs = self.cursor.fetchall()
         teams = []
@@ -327,7 +327,7 @@ class menuWindow:
         self.club1DropDown['values'] = [club[1] for club in clubs]
         self.team1DropDown['values'] = [team[0] for team in teams]
 
-    def onClub2Change(self, *args):
+    def onClub2Change(self, *args):  # Used to display all teams and clubs that might be associated to the current input
         self.cursor.execute('''SELECT * FROM Clubs WHERE name LIKE ?''', (self.tkClub2.get() + '%',))
         clubs = self.cursor.fetchall()
         teams = []
@@ -340,9 +340,9 @@ class menuWindow:
         self.team2DropDown['values'] = [team[0] for team in teams]
 
     def displayLookup(self):
-        self.cursor.execute('''SELECT SUM(challenges), SUM(successful_challenges) FROM People WHERE team = ?;''', (self.challenger[5],))
+        self.cursor.execute('''SELECT SUM(challenges), SUM(successful_challenges) FROM People WHERE team = ?;''', (self.challenger[5],))  # Gets the team challenges
         teamChallenges, teamSuccessfulChallenges = self.cursor.fetchone()
-        self.cursor.execute('''SELECT COUNT(*) FROM Matches WHERE home_team = ? OR away_team = ?;''', (self.challenger[5], self.challenger[5]))
+        self.cursor.execute('''SELECT COUNT(*) FROM Matches WHERE home_team = ? OR away_team = ?;''', (self.challenger[5], self.challenger[5]))  # Gets all matches for their team
         teamMatchesPlayed = self.cursor.fetchone()
 
         teamTitleLabel = tk.Label(self.root, text='Team Stats:')
@@ -378,7 +378,7 @@ class menuWindow:
         self.cursor.execute('''INSERT OR IGNORE INTO Matches (home_team, away_team, umpire, date) VALUES (?, ?, ?, ?);''',
                             (team1ID, team2ID, self.ID, datetime.datetime.today().strftime('%d-%m-%Y')))
         self.cursor.execute('''SELECT ID FROM Matches WHERE home_team = ? AND away_team = ? AND umpire = ? AND date = ?;''', (team1ID, team2ID, self.ID, datetime.datetime.today().strftime('%d-%m-%Y')))
-        matchID = self.cursor.fetchone()[0]
+        matchID = self.cursor.fetchone()[0]  # Find clubs/teams in match
 
         if self.isUmpire:
             user = peopleClasses.Umpire(self.challenger[0], matchData[0], matchData[1], umpireId=self.ID)
@@ -390,28 +390,28 @@ class menuWindow:
             user = peopleClasses.Player(self.ID, matchData[0], matchData[1], isHome=isHome)
         self.clearLoginWindow()
         self.conn.commit()
-        self.conn.close()
-        hockeyTkinterWindow(matchID, user, root=self.root)
+        self.conn.close()  # Commit database to be opened later in different thread
+        hockeyTkinterWindow(matchID, user, root=self.root)  # Initialise the hockeyVAR window
 
     def clearLoginWindow(self):
-        for widget in self.root.winfo_children():
+        for widget in self.root.winfo_children():  # Loops through tkinter widgets and destroys them
             widget.destroy()
 
 
 class hockeyTkinterWindow:
     def __init__(self, matchID, user, root=None):
         self.frameControlFlag = 0  # -1 for rewinding, 1 for forwarding, 0 for all else
-        self.video = None
-        self.matchID = matchID
-        self.clipID = None
-        self.user = user
-        if root != None:
+        self.video = None  # Initialise video, will later be assigned as an instance of custom HockeyVideo object
+        self.matchID = matchID  # matchID in database
+        self.clipID = None  # Initialise clipID
+        self.user = user  # Set user
+        if root != None:  # If a root was passed, create with that root
             self.createWindow(root=root)
         else:
             self.createWindow()
 
     def createWindow(self, root=None):
-        if root == None:
+        if root == None:  # Create a window if no root was passed
             self.root = tk.Tk()
             self.root.minsize(250, 300)
         else:
@@ -422,11 +422,11 @@ class hockeyTkinterWindow:
 
         self.submitVideoButton = tk.Button(self.root, text='Submit File', command=self.submitVideo,
                                            activebackground='blue', activeforeground='white')
-        self.submitVideoButton.grid(row=0, column=0, pady=2)
+        self.submitVideoButton.grid(row=0, column=0, pady=2)  # Submit a video
 
-        self.root.after(500, self.frameControlLoop)
+        self.root.after(500, self.frameControlLoop)  # Wait 500ms before running frameControlLoop
 
-    def createButtonsWidget(self):
+    def createButtonsWidget(self):  # Creates buttons with images for the UI
         self.buttonFrame = tk.Frame(self.root, bg='grey')
         self.buttonFrame.grid(row=3, column=0, columnspan=6)
 
@@ -475,25 +475,25 @@ class hockeyTkinterWindow:
         self.challengeButton.grid(row=0, column=6, padx=5, pady=2)
 
     def frameControlLoop(self):
-        if self.frameControlFlag != 0:
+        if self.frameControlFlag != 0:  # If rewinding or forwarding
             if self.frameControlFlag == 1 and self.video.frameNum + self.video.frameJump <= self.video.lastFrame:
-                self.video.frameNum += self.video.frameJump
+                self.video.frameNum += self.video.frameJump  # Forward
 
             if self.frameControlFlag == -1 and self.video.frameNum - self.video.frameJump >= 0:
-                self.video.frameNum -= self.video.frameJump
+                self.video.frameNum -= self.video.frameJump  # Rewind
 
             self.video.nextFrameDisplayTime = time.time()
 
-        if hasattr(self, 'video'):
+        if hasattr(self, 'video'):  # If a video has been created
             if hasattr(self.video, 'challengeCorrect'):
-                if self.video.challengeCorrect != None:
+                if self.video.challengeCorrect != None:  # If a VAR has been initiated and completed
                     conn = sqlite3.connect('hockey_video.db')
                     cursor = conn.cursor()
-                    cursor.execute('''INSERT OR IGNORE INTO Challenges (frame_num, challenger, challenge_correct, clip_id) VALUES (?, ?, ?, ?);''', (self.video.frameNum, self.user.userID, self.video.challengeCorrect, self.clipID))
+                    cursor.execute('''INSERT OR IGNORE INTO Challenges (frame_num, challenger, challenge_correct, clip_id) VALUES (?, ?, ?, ?);''', (self.video.frameNum, self.user.userID, self.video.challengeCorrect, self.clipID))  # Create a challenge in the database
                     successfulBool = 0
                     if self.video.challengeCorrect:
                         successfulBool = 1
-                    cursor.execute('''UPDATE People SET challenges = challenges + 1 WHERE ID = ?;''', (self.user.userID,))
+                    cursor.execute('''UPDATE People SET challenges = challenges + 1 WHERE ID = ?;''', (self.user.userID,))  # Update user with challenge
                     cursor.execute(
                         '''UPDATE People SET successful_challenges = successful_challenges + ? WHERE ID = ?;''',
                         (successfulBool, self.user.userID))
@@ -502,68 +502,68 @@ class hockeyTkinterWindow:
                     conn.close()
 
         try:
-            self.root.after(self.video.frameJump * 200, self.frameControlLoop)
+            self.root.after(self.video.frameJump * 200, self.frameControlLoop)  # Recall this function in 200ms * the jump in frames to pace the forwarding/rewinding
         except:
-            self.root.after(200, self.frameControlLoop)
+            self.root.after(200, self.frameControlLoop)  # Recall after 200ms if frameJump does not exist
 
     def submitVideo(self):
         try:
-            self.video.videoEnded = True
+            self.video.videoEnded = True  # Try to end any existing video
         except:
             print('no video')
-        submitVideoThread = threading.Thread(target=self.processVideo)
+        submitVideoThread = threading.Thread(target=self.processVideo)  # Start thread for processing the video independent of the window
         submitVideoThread.start()
 
     def processVideo(self):
         conn = sqlite3.connect('hockey_video.db')
         cursor = conn.cursor()
-        frameJump = 1
+        frameJump = 1  # Set jump in frames for performance
         filename = fd.askopenfilename()
-        cursor.execute('''INSERT OR IGNORE INTO Clips (path, match_id) VALUES (?, ?)''', (filename, self.matchID))
+        cursor.execute('''INSERT OR IGNORE INTO Clips (path, match_id) VALUES (?, ?)''', (filename, self.matchID))  # Create clip in db
         cursor.execute('''SELECT ID FROM Clips WHERE path = ? AND match_id = ?;''', (filename, self.matchID))
         self.clipID = cursor.fetchone()[0]
         conn.commit()
         conn.close()
-        self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump, debug=True)
-        displayThread = threading.Thread(target=self.video.displayFrames)
+        self.video = videoClass.HockeyVideo(self.root, filename, frameJump=frameJump, debug=True)  # Create hockey video
+        displayThread = threading.Thread(target=self.video.displayFrames)  # Start the thread to display the video independent of window
         displayThread.start()
-        self.createButtonsWidget()
+        self.createButtonsWidget()  # Create the widget which contains the UI for media control
 
-    def getMousePos(self, event):
+    def getMousePos(self, event):  # Gets mouse position
         self.mouseX = event.x
         self.mouseY = event.y
         print(self.mouseX, self.mouseY)
 
-    def normalSpeed(self):
+    def normalSpeed(self):  # Video speed control
         self.video.speed = 1
         self.video.nextFrameDisplayTime = time.time()
 
-    def halfSpeed(self):
-        self.video.speed = 0.3
+    def halfSpeed(self):  # Halves the video speed
+        self.video.speed = 0.5
         self.video.nextFrameDisplayTime = time.time()
 
-    def pauseVideo(self):
+    def pauseVideo(self):  # Sets paused flag
         self.video.isPaused = True
 
-    def playVideo(self):
+    def playVideo(self):  # Sets paused flag and resets when the next image should be displayed
         self.video.isPaused = False
         self.video.nextFrameDisplayTime = time.time()
 
-    def reverseFrame(self, event):
+    def reverseFrame(self, event):  # Sets frameControlFlag for the frameControlLoop function
         self.pauseVideo()
         self.frameControlFlag = -1
         if self.video.frameNum - self.video.frameJump >= 0:
             self.video.frameNum -= self.video.frameJump
 
-    def forwardFrame(self, event):
+    def forwardFrame(self, event):  # Sets frameControlFlag for the frameControlLoop function
         self.pauseVideo()
         self.frameControlFlag = 1
         if self.video.frameNum + self.video.frameJump <= self.video.lastFrame:
             self.video.frameNum += self.video.frameJump
 
-    def stopFrameControl(self, event):
+    def stopFrameControl(self, event):  # Stops rewind/forwarding
         self.frameControlFlag = 0
 
-    def challenge(self):
+    def challenge(self):  # Starts VAR
         self.video.footIdentified = True
         self.video.isPaused = False
