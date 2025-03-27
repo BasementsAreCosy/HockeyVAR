@@ -1,27 +1,15 @@
 class Person:
-    def __init__(self, userID, home, away):
+    def __init__(self, userID, home, away):  # Class to store home/away and user for a specific match
         self.userID = userID
         self.home = home
         self.away = away
 
-    def recordChallenge(self):
-        pass
-
-    def getSubjectData(self):
-        pass
-
-class Umpire(Person):
+class Umpire(Person):  # Inherit from person, includes umpireID as well as the challenger
     def __init__(self, challengerID, home, away, umpireId=None, isHome=None):
         self.umpireID = umpireId
         super().__init__(challengerID, home, away)
 
-    def recordChallenge(self):
-        pass
-
-    def getSubjectData(self):
-        pass
-
-class Player(Person):
+class Player(Person):  # Has challenger as themself, no umpireID
     def __init__(self, userID, home, away, isHome):
         self.isHome = isHome
         super().__init__(userID, home, away)
