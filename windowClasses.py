@@ -529,11 +529,6 @@ class hockeyTkinterWindow:
         displayThread.start()
         self.createButtonsWidget()  # Create the widget which contains the UI for media control
 
-    def getMousePos(self, event):  # Gets mouse position
-        self.mouseX = event.x
-        self.mouseY = event.y
-        print(self.mouseX, self.mouseY)
-
     def normalSpeed(self):  # Video speed control
         self.video.speed = 1
         self.video.nextFrameDisplayTime = time.time()
