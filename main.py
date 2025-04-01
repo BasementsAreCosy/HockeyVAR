@@ -1,4 +1,4 @@
-import windowClass
+import windowClasses
 import sqlite3
 
 conn = sqlite3.connect('hockey_video.db')  # Create or connect to a database
@@ -45,7 +45,6 @@ cursor.execute('''
                 challenges INTEGER,
                 successful_challenges INTEGER
             );''')
-# Not covering User Auth and Encryption for NEA course. In practice and production, User Auth would be developed using appropriate libraries
 
 cursor.execute('''
             CREATE TABLE IF NOT EXISTS Clips
@@ -68,4 +67,4 @@ cursor.execute('''
 conn.commit()
 conn.close()  # Must commit and close before opening the window as sqlite does not function across several threads
 
-window = windowClass.menuWindow()  # Initialises the Tkinter window
+window = windowClasses.menuWindow()  # Initialises the Tkinter window
